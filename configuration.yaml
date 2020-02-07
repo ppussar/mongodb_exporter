@@ -1,0 +1,26 @@
+version: 1.0
+http:
+  port: 9090
+  path: /prometheus
+mongodb:
+  uri: mongodb://localhost:27017
+metrics:
+  - name: fruitstore_stock
+    help: "Shows the current stock"
+    db: fruitstore
+    collection: fruits
+    tags:
+      provider: mongodb_exporter
+    find: "{}"
+    metricsAttribute: qty
+    tagAttributes:
+      type: _id
+  - name: fruitstore_total
+    db: fruitstore
+    collection: fruits
+    tags:
+      provider: mongodb_exporter
+    aggregate: '[{"$group": { "_id": "$deliverer", "pieces": {"$sum": "$qty"}}}]'
+    metricsAttribute: pieces
+    tagAttributes:
+      type: _id

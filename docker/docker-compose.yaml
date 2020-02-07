@@ -1,0 +1,12 @@
+---
+version: '3'
+services:
+  database:
+    image: 'mongo'
+    container_name: database
+    environment:
+        MONGO_INITDB_DATABASE: fruitstore
+    volumes:
+        - ./fruits.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    ports:
+    - "27017-27019:27017-27019"

@@ -1,12 +1,34 @@
 ---
-version: '3'
+version: '3.7'
 services:
   database:
     image: 'mongo'
     container_name: database
     environment:
-        MONGO_INITDB_DATABASE: fruitstore
+      MONGO_INITDB_DATABASE: fruitstore
     volumes:
-        - ./fruits.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./fruits.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     ports:
-    - "27017-27019:27017-27019"
+      - "27017-27019:27017-27019"
+    restart: always
+    healthcheck:
+      test: "if mongo --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'; then exit 0; fi; exit 1;"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+  exporter:
+    build:
+      context: ../bin
+    container_name: exporter
+    environment:
+      CONFIG: "/configuration.yaml"
+    volumes:
+      - ./configuration.yaml:/configuration.yaml
+    ports:
+      - "9090:9090"
+    links:
+      - database
+    depends_on:
+      - database
+    restart: always

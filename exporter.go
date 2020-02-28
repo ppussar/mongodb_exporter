@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/ppussar/mongodb_exporter/inner"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,14 +35,17 @@ func run() error {
 		return err
 	}
 
-	con, err := inner.NewConnection(config.MongoDb.URI)
-	if err != nil {
-		return err
+	for {
+		con, err := inner.NewConnection(config.MongoDb.URI)
+		if err != nil {
+			fmt.Printf("Waiting %s", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		registerCollectors(config.Metrics, con)
+		fmt.Println("Started")
+		serveMetricsEndpoint(config.HTTP.Port, config.HTTP.Path)
 	}
-	registerCollectors(config.Metrics, con)
-	serveMetricsEndpoint(config.HTTP.Port, config.HTTP.Path)
-
-	return nil
 }
 
 func printUsage() {

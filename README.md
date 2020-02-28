@@ -1,10 +1,21 @@
 # MongoDB Query Exporter
 
+[![Build Status](https://travis-ci.com/ppussar/mongodb_exporter.svg?branch=develop)](https://travis-ci.com/ppussar/mongodb_exporter)
+
+Prometheus exporter for MongoDB queries. Extract metrics from mongoDB queries results.
+
 ## Build and Run
+
+### Bash
 
 ```bash
 make build
 mongodb_exporter configuration.yaml
+```
+
+### Docker
+```bash
+docker run -v /local/path/to/configuration.yaml:/configuration.yaml -e CONFIG=/configuration.yaml ppussar/mongodb_exporter
 ```
 
 ## Configuration

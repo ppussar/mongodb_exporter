@@ -1,6 +1,6 @@
 # MongoDB Query Exporter
 
-[![CircleCI](https://circleci.com/gh/ppussar/mongodb_exporter/tree/develop.svg?style=svg)](https://circleci.com/gh/ppussar/mongodb_exporter/tree/develop.svg?style=svg)
+[![CircleCI](https://circleci.com/gh/ppussar/mongodb_exporter/tree/develop.svg?style=svg)](https://circleci.com/gh/ppussar/mongodb_exporter)
 
 
 Prometheus exporter for MongoDB queries. Extract metrics from mongoDB queries results.

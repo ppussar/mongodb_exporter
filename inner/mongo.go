@@ -19,7 +19,7 @@ type Connection struct {
 // NewConnection opens a connection to mongoDB by using the given uri
 func NewConnection(uri string) (Connection, error) {
 	mc, err := mongo.NewClient(options.Client().ApplyURI(uri))
-	ctx := context.TODO()
+	ctx := context.Background()
 	mc.Connect(ctx)
 	client := Connection{
 		client:  mc,

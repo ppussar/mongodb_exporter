@@ -7,7 +7,7 @@ import (
 // ReadConfig Parses given config content
 func ReadConfig(data []byte) (Config, error) {
 	c := Config{}
-	err := yaml.Unmarshal(data, &c)
+	err := yaml.UnmarshalStrict(data, &c)
 	return c, err
 }
 

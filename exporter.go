@@ -23,7 +23,7 @@ func main() {
 func run() error {
 	if len(os.Args) < 2 {
 		printUsage()
-		return errors.New("Missing config")
+		return errors.New("missing config")
 	}
 
 	dat, err := ioutil.ReadFile(os.Args[1])

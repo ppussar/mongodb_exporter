@@ -3,7 +3,7 @@ http:
   port: 9090
   path: /prometheus
 mongodb:
-  uri: mongodb://localhost:27017
+  uri: mongodb://database:27017
 metrics:
   - name: fruitstore_stock
     help: "Shows the current stock"

@@ -1,7 +1,7 @@
 # MongoDB Query Exporter
 
 [![CircleCI](https://circleci.com/gh/ppussar/mongodb_exporter/tree/develop.svg?style=svg)](https://circleci.com/gh/ppussar/mongodb_exporter)
-
+[![GoReport](https://goreportcard.com/badge/github.com/ppussar/mongodb_exporter)](https://goreportcard.com/report/github.com/ppussar/mongodb_exporter)
 
 Prometheus exporter for MongoDB queries. Extract metrics from mongoDB queries results.
 
@@ -18,6 +18,21 @@ make build
 
 ```bash
 docker run -v /local/path/to/configuration.yaml:/configuration.yaml -e CONFIG=/configuration.yaml ppussar/mongodb_exporter
+```
+
+### Run Demo Application
+
+(Requires docker)
+
+Start mongodb and application container.
+```bash
+make start-demo
+curl localhost:9090/prometheus
+```
+
+Stop mongodb and application container.
+```bash
+make stop-demo
 ```
 
 ## Configuration
@@ -80,10 +95,12 @@ metrics:
 ### Given Collection 'fruits'
 
 ```json
-{ "_id": "apples", "qty": 5, "deliverer" : "Fruit Express"}
-{ "_id": "bananas", "qty": 7, "deliverer" : "Bananas Daily" }
-{ "_id": "oranges", "qty": 12, "deliverer" : "Fruit Express"}
-{ "_id": "avocados", "qty": 14, "deliverer" : "Fruit Marked" }
+[
+  { "_id": "apples", "qty": 5, "deliverer" : "Fruit Express"},
+  { "_id": "bananas", "qty": 7, "deliverer" : "Bananas Daily" },
+  { "_id": "oranges", "qty": 12, "deliverer" : "Fruit Express"},
+  { "_id": "avocados", "qty": 14, "deliverer" : "Fruit Marked" }
+]
 ```
 
 ### Configuration with adapted prometheus endpoint port
@@ -120,7 +137,7 @@ metrics:
 ### scrape
 
 ```bash
-curl http://localhost:8080/prometheus
+curl http://localhost:9090/prometheus
 ```
 
 ### Output

@@ -10,10 +10,26 @@ all:
 
 .PHONY: run
 run:
-	$(GO) run *.go docker/configuration.yaml
+	$(GO) run *.go configuration.yaml
+
+.PHONY: test
+test: ## Runs the go tests.
+	@echo "+ $@"
+	@$(GO) test -v -tags "$(BUILDTAGS) cgo" $(shell $(GO) list ./... | grep -v vendor)
+
+.PHONY: cover
+cover: ## Runs go test with coverage.
+	@echo "" > coverage.txt
+	@for d in $(shell $(GO) list ./... | grep -v vendor); do \
+		$(GO) test -race -coverprofile=profile.out -covermode=atomic "$$d"; \
+		if [ -f profile.out ]; then \
+			cat profile.out >> coverage.txt; \
+			rm profile.out; \
+		fi; \
+	done;
 
 .PHONY: build
-build:
+build: test
 	$(GO) build -v -o $(BIN)/mongodb_exporter .
 
 .PHONY: clean
@@ -30,10 +46,10 @@ image:
 push-image:
 	@docker push $(IMAGE):$(VERSION)
 
-.PHONY: startdb
-startdb: dockerize
-	@docker-compose -f docker/docker-compose.yaml up --build
+.PHONY: start-demo
+start-demo: image
+	@docker-compose -f docker/docker-compose.yaml up --build -d
 
-.PHONY: stopdb
-stopdb:
+.PHONY: stop-demo
+stop-demo:
 	@docker-compose -f docker/docker-compose.yaml down --remove-orphans

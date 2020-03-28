@@ -9,7 +9,7 @@ services:
     volumes:
       - ./fruits.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     ports:
-      - "27017-27019:27017-27019"
+      - "27017-27017:27017-27017"
     restart: always
     healthcheck:
       test: "if mongo --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'; then exit 0; fi; exit 1;"
@@ -17,6 +17,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
+
   exporter:
     build:
       context: ../bin

@@ -1,6 +1,6 @@
 BIN      = $(CURDIR)/bin
 IMAGE    = ppussar/mongodb_exporter
-VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || echo v0)
+VERSION ?= $(shell git describe --tags --always --dirty 2> /dev/null || echo v0)
 GO      = go
 TIMEOUT = 15
 

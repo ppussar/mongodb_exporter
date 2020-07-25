@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/ppussar/mongodb_exporter/inner/wrapper"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -54,10 +55,10 @@ func printUsage() {
 
 func serveMetricsEndpoint(port int, path string) {
 	http.Handle(path, promhttp.Handler())
-	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	_ = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
 
-func registerCollectors(configs []inner.Metric, con inner.Connection) {
+func registerCollectors(configs []inner.Metric, con wrapper.IConnection) {
 	for _, c := range configs {
 		collector := inner.NewCollector(c, con)
 		prometheus.MustRegister(collector)

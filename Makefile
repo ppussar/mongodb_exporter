@@ -53,3 +53,8 @@ start-demo: image
 .PHONY: stop-demo
 stop-demo:
 	@docker-compose -f docker/docker-compose.yaml down --remove-orphans
+
+.PHONY: generate-mocks
+generate-mocks: ## regenerates the mocks for the tests
+	mockery -dir inner/wrapper -name IConnection
+	mockery -dir inner/wrapper -name ICursor

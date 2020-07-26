@@ -1,10 +1,11 @@
 package inner
 
 import (
+	"context"
+	"github.com/ppussar/mongodb_exporter/inner/wrapper"
 	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -12,13 +13,13 @@ import (
 type Collector struct {
 	desc             *prometheus.Desc
 	config           Metric
-	mongo            Connection
+	mongo            wrapper.IConnection
 	varTagValueNames []string
 }
 
 //NewCollector constructor
 //initializes every descriptor and returns a pointer to the collector
-func NewCollector(c Metric, con Connection) *Collector {
+func NewCollector(c Metric, con wrapper.IConnection) *Collector {
 	varTagNames := make([]string, 0, len(c.TagAttributes))
 	varTagValues := make([]string, 0, len(c.TagAttributes))
 	for key, value := range c.TagAttributes {
@@ -48,17 +49,20 @@ func (col *Collector) Describe(ch chan<- *prometheus.Desc) {
 func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	var err error
-	var cur *mongo.Cursor
+	var cur wrapper.ICursor
+	ctx := context.Background()
 	if len(col.config.Aggregate) != 0 {
-		cur, err = col.mongo.aggregate(col.config.Db, col.config.Collection, col.config.Aggregate)
+		cur, err = col.mongo.Aggregate(col.config.Db, col.config.Collection, col.config.Aggregate, ctx)
+	} else if len(col.config.Find) != 0 {
+		cur, err = col.mongo.Find(col.config.Db, col.config.Collection, col.config.Find, ctx)
 	} else {
-		cur, err = col.mongo.find(col.config.Db, col.config.Collection, col.config.Find)
+		log.Fatal("Nothing to do, check config!")
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cur.Close(col.mongo.Context)
-	for cur.Next(col.mongo.Context) {
+	defer cur.Close(context.Background())
+	for cur.Next(ctx) {
 		var result bson.M
 		err := cur.Decode(&result)
 		if err != nil {

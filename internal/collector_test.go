@@ -1,8 +1,7 @@
-package inner
+package internal
 
 import (
-	"context"
-	"github.com/ppussar/mongodb_exporter/mocks"
+	"github.com/ppussar/mongodb_exporter/internal/mocks"
 	"github.com/stretchr/testify/mock"
 	"gopkg.in/mgo.v2/bson"
 	"testing"
@@ -11,20 +10,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDescribeReturnsAllMetricDescriptionsOfTheCollector(t *testing.T) {
+func TestCollector(t *testing.T) {
+	t.Run("NewCollector", func(t *testing.T) {
 
-	metric := Metric{
-		Name: "myMetric",
-		Help: "myHelp",
-	}
-	con := Connection{}
-	c := NewCollector(metric, con)
-	ch := make(chan *prometheus.Desc, 1)
-	c.Describe(ch)
+		metric := Metric{
+			Name: "name",
+			Help: "help",
+			Tags: map[string]string{
+				"tagKey": "tagValue",
+			},
+			TagAttributes: map[string]string{
+				"tagAttrKey": "tagAttrValue",
+			},
+		}
+		con := Connection{}
+		c := NewCollector(metric, con, make(chan error, 1))
 
-	actual := <-ch
+		assert.Equal(t, "Desc{fqName: \"name\", help: \"help\", constLabels: {tagKey=\"tagValue\"}, variableLabels: [tagAttrKey]}", c.String())
+	})
+}
 
-	assert.Equal(t, actual.String(), "Desc{fqName: \"myMetric\", help: \"myHelp\", constLabels: {}, variableLabels: []}", "Mismatching metrics description.")
+func TestDescribe(t *testing.T) {
+	t.Run("Describe returns all MetricDescriptions of the collector", func(t *testing.T) {
+		metric := Metric{
+			Name: "myMetric",
+			Help: "myHelp",
+		}
+		con := Connection{}
+		c := NewCollector(metric, con, make(chan error, 1))
+		ch := make(chan *prometheus.Desc, 1)
+		c.Describe(ch)
+
+		actual := <-ch
+
+		assert.Equal(t, actual.String(), "Desc{fqName: \"myMetric\", help: \"myHelp\", constLabels: {}, variableLabels: []}", "Mismatching metrics description.")
+	})
+
 }
 
 func TestCollect(t *testing.T) {
@@ -37,9 +58,9 @@ func TestCollect(t *testing.T) {
 		mongoCursor.On("Err").Return(nil).Once()
 		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
 		mongoMock := mocks.IConnection{}
-		mongoMock.On("Aggregate", metric.Db, metric.Collection, metric.Aggregate, context.Background()).Return(&mongoCursor, nil).Once()
+		mongoMock.On("Aggregate", metric.Db, metric.Collection, metric.Aggregate, mock.Anything).Return(&mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock)
+		c := NewCollector(metric, &mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
 		c.Collect(ch)
 
@@ -63,9 +84,9 @@ func TestCollect(t *testing.T) {
 
 		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
 		mongoMock := mocks.IConnection{}
-		mongoMock.On("Aggregate", metric.Db, metric.Collection, metric.Aggregate, context.Background()).Return(&mongoCursor, nil).Once()
+		mongoMock.On("Aggregate", metric.Db, metric.Collection, metric.Aggregate, mock.Anything).Return(&mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock)
+		c := NewCollector(metric, &mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
 		c.Collect(ch)
 
@@ -84,9 +105,9 @@ func TestCollect(t *testing.T) {
 		mongoCursor.On("Err").Return(nil).Once()
 		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
 		mongoMock := mocks.IConnection{}
-		mongoMock.On("Find", metric.Db, metric.Collection, metric.Find, context.Background()).Return(&mongoCursor, nil).Once()
+		mongoMock.On("Find", metric.Db, metric.Collection, metric.Find, mock.Anything).Return(&mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock)
+		c := NewCollector(metric, &mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
 		c.Collect(ch)
 
@@ -113,12 +134,9 @@ func testMetric() (Metric, bson.M) {
 	}
 
 	value := bson.M{
-		"_id": "112233",
+		"_id":   "112233",
 		"value": 42.0,
 	}
 
 	return metric, value
-
-
-
 }

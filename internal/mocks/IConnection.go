@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	wrapper "github.com/ppussar/mongodb_exporter/inner/wrapper"
+	wrapper "github.com/ppussar/mongodb_exporter/internal/wrapper"
 	mock "github.com/stretchr/testify/mock"
 )
 

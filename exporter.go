@@ -1,66 +1,98 @@
 package main
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"github.com/ppussar/mongodb_exporter/inner/wrapper"
-	"io/ioutil"
-	"net/http"
+	"github.com/ppussar/mongodb_exporter/internal/logger"
+	"github.com/ppussar/mongodb_exporter/internal/wrapper"
+	"github.com/prometheus/client_golang/prometheus"
 	"os"
+	"sync"
 	"time"
 
-	"github.com/ppussar/mongodb_exporter/inner"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/ppussar/mongodb_exporter/internal"
 )
 
-func main() {
-	if err := run(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+var log = logger.GetInstance()
+
+type Exporter struct {
+	srv        *internal.HttpServer
+	config     internal.Config
+	collectors []*internal.Collector
 }
 
-func run() error {
+func main() {
 	if len(os.Args) < 2 {
 		printUsage()
-		return errors.New("missing config")
+		os.Exit(1)
 	}
-
-	dat, err := ioutil.ReadFile(os.Args[1])
+	config, err := internal.ReadConfigFile(os.Args[1])
 	if err != nil {
-		return err
+		log.Fatal(err.Error())
 	}
-	config, err := inner.ReadConfig(dat)
-	if err != nil {
-		return err
-	}
-
-	for {
-		con, err := inner.NewConnection(config.MongoDb.URI)
-		if err != nil {
-			fmt.Printf("Waiting %s", err)
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		registerCollectors(config.Metrics, con)
-		fmt.Println("Started")
-		serveMetricsEndpoint(config.HTTP.Port, config.HTTP.Path)
-	}
+	NewExporter(config).start()
 }
 
 func printUsage() {
 	fmt.Printf("Usage: \n\t%s configuration.yaml\n", os.Args[0])
 }
 
-func serveMetricsEndpoint(port int, path string) {
-	http.Handle(path, promhttp.Handler())
-	_ = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+func NewExporter(config internal.Config) *Exporter {
+	return &Exporter{
+		config:     config,
+		srv:        internal.NewHttpServer(config),
+		collectors: make([]*internal.Collector, 0),
+	}
 }
 
-func registerCollectors(configs []inner.Metric, con wrapper.IConnection) {
+func (e *Exporter) start() {
+	go e.connect()
+
+	wg := &sync.WaitGroup{}
+	log.Info("Started")
+	wg.Add(1)
+	e.srv.Start(wg)
+	wg.Wait()
+}
+
+func (e *Exporter) connect() {
+	errorC := make(chan error, 1)
+
+	for {
+		con, err := internal.NewConnection(e.config.MongoDb.URI)
+		if err != nil {
+			log.Info(fmt.Sprintf("Error during connection creation: %v; Retry in 2s...", err))
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		if con != nil {
+			if len(e.collectors) == 0 {
+				e.registerCollectors(e.config.Metrics, con, errorC)
+			} else {
+				e.updateCollectorConnection(con)
+			}
+		}
+		<- errorC
+	}
+}
+
+func (e *Exporter) shutdown(ctx context.Context) error {
+	return e.srv.Shutdown(ctx)
+}
+
+func (e *Exporter) registerCollectors(configs []internal.Metric, con wrapper.IConnection, errorC chan error) {
+	//e.collectors = make([]*internal.Collector, len(configs))
 	for _, c := range configs {
-		collector := inner.NewCollector(c, con)
+		collector := internal.NewCollector(c, con, errorC)
+		e.collectors = append(e.collectors, collector)
+		log.Info("Register new collector: " + collector.String())
 		prometheus.MustRegister(collector)
+	}
+}
+
+func (e *Exporter) updateCollectorConnection(con wrapper.IConnection) {
+	for _, curCollector := range e.collectors {
+		log.Info("Update connection in collector: " + curCollector.String())
+		curCollector.Mongo = con
 	}
 }

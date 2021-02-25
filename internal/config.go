@@ -1,9 +1,17 @@
-package inner
+package internal
 
 import (
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
 )
 
+func ReadConfigFile(configFile string) (Config, error) {
+	dat, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return Config{}, err
+	}
+	return ReadConfig(dat)
+}
 // ReadConfig Parses given config content
 func ReadConfig(data []byte) (Config, error) {
 	c := Config{}
@@ -19,8 +27,10 @@ type Config struct {
 	Metrics []Metric
 }
 type http struct {
-	Port int
-	Path string
+	Port       int
+	Prometheus string
+	Health     string
+	Liveliness string
 }
 type mongoDb struct {
 	URI string

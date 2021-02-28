@@ -39,17 +39,34 @@ make stop-demo
 
 The exporter is configured via yaml.
 
-### Prometheus Endpoint
+### HTTP Endpoints
 
-Prometheus scrapes its monitored applications regularly via a provided http endpoint. This configuration opens a http endpoint on [http://localhost:9090/prometheus](http://localhost:9090/prometheus)
+#### Prometheus
 
-`https is currently not supported.
+Prometheus scrapes its monitored applications regularly via a provided http endpoint. 
+The configuration below opens a http endpoint on [http://localhost:9090/prometheus](http://localhost:9090/prometheus)
+
+#### Liveliness
+
+Liveliness-Endpoint returns http status code 204 - [No Content] as soon as the exporter is started. 
+An HTTP error status code indicates that the application is in bad condition and should be restarted.  
+The configuration below opens a http endpoint on [http://localhost:9090/live](http://localhost:9090/live)
+
+#### Health
+
+Health-Endpoint returns http status code 200 as soon as the exporter is ready to serve user request.
+An HTTP error status code indicates that the application is currently not able to collect db metrics.
+The configuration below opens a http endpoint on [http://localhost:9090/health](http://localhost:9090/health)
 
 ```yaml class:"lineNo"
 http:
   port: 9090
   path: /prometheus
+  health: '/health'
+  liveliness: '/live'
 ```
+
+`https is currently not supported.
 
 ### Mongo-DB connection
 

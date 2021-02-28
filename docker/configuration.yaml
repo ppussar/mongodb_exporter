@@ -1,7 +1,9 @@
 version: 1.0
 http:
   port: 9090
-  path: /prometheus
+  prometheus: '/prometheus'
+  health: '/health'
+  liveliness: '/live'
 mongodb:
   uri: mongodb://database:27017
 metrics:

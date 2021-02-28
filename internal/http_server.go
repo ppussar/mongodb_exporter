@@ -1,0 +1,69 @@
+package internal
+
+import (
+	"context"
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net"
+	netHttp "net/http"
+	"sync"
+)
+
+type HttpServer struct {
+	Port   int
+	config Config
+	server *netHttp.Server
+}
+
+func NewHttpServer(config Config) *HttpServer {
+	return &HttpServer{
+		config: config,
+	}
+}
+
+func (s *HttpServer) Start(wg *sync.WaitGroup) {
+	if err := registerHealthHandler(s.config.HTTP.Health, s.config.MongoDb.URI); err != nil {
+		log.Fatal(err.Error())
+	}
+	registerLivelinessHandler(s.config.HTTP.Liveliness)
+	registerPrometheusHandler(s.config.HTTP.Prometheus)
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.HTTP.Port))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	s.Port = listener.Addr().(*net.TCPAddr).Port
+	s.server = &netHttp.Server{}
+
+	go func() {
+		defer wg.Done()
+		defer log.Info("Stopping server")
+		log.Info(fmt.Sprintf("Serving endpoint on port: %v", s.Port))
+		if err := s.server.Serve(listener); err != netHttp.ErrServerClosed {
+			log.Fatal(fmt.Sprintf("ListenAndServe(): %v", err))
+		}
+	}()
+}
+
+func (s *HttpServer) Shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
+}
+
+func registerHealthHandler(path string, mongoUri string) error {
+	handler, err := RegisterHealthChecks(mongoUri)
+	if err != nil {
+		return err
+	}
+	netHttp.Handle(path, handler)
+	return nil
+}
+
+func registerLivelinessHandler(path string) {
+	netHttp.HandleFunc(path, func(w netHttp.ResponseWriter, request *netHttp.Request) {
+		w.WriteHeader(204)
+	})
+}
+
+func registerPrometheusHandler(path string) {
+	netHttp.Handle(path, promhttp.Handler())
+}

@@ -1,8 +1,9 @@
-package inner
+package internal
 
 import (
 	"context"
 	"fmt"
+	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,18 +18,22 @@ type Connection struct {
 }
 
 // NewConnection opens a connection to mongoDB by using the given uri
-func NewConnection(uri string) (Connection, error) {
+func NewConnection(uri string) (wrapper.IConnection, error) {
 	mc, err := mongo.NewClient(options.Client().ApplyURI(uri))
-	ctx := context.Background()
-	mc.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	err = mc.Connect(ctx)
+
 	client := Connection{
 		client:  mc,
-		Context: ctx,
 	}
+
 	return client, err
 }
 
-func (con Connection) aggregate(db string, collection string, command string) (*mongo.Cursor, error) {
+func (con Connection) Aggregate(db string, collection string, command string, ctx context.Context) (wrapper.ICursor, error) {
 	var pipeline interface{}
 	err := bson.UnmarshalExtJSON([]byte(command), true, &pipeline)
 	if err != nil {
@@ -36,15 +41,15 @@ func (con Connection) aggregate(db string, collection string, command string) (*
 		return nil, err
 	}
 	opts := options.Aggregate().SetMaxTime(2 * time.Second)
-	return con.client.Database(db).Collection(collection).Aggregate(con.Context, pipeline, opts)
+	return con.client.Database(db).Collection(collection).Aggregate(ctx, pipeline, opts)
 }
 
-func (con Connection) find(db string, collection string, command string) (*mongo.Cursor, error) {
+func (con Connection) Find(db string, collection string, command string, ctx context.Context) (wrapper.ICursor, error) {
 	var bdoc interface{}
 	err := bson.UnmarshalExtJSON([]byte(command), true, &bdoc)
 	if err != nil {
 		fmt.Println(command)
 		return nil, err
 	}
-	return con.client.Database(db).Collection(collection).Find(con.Context, &bdoc)
+	return con.client.Database(db).Collection(collection).Find(ctx, &bdoc)
 }

@@ -75,5 +75,5 @@ stop-demo:
 
 .PHONY: generate-mocks
 generate-mocks: ## regenerates the mocks for the tests
-	mockery -dir inner/wrapper -name IConnection
-	mockery -dir inner/wrapper -name ICursor
+	mockery -dir internal/wrapper -name IConnection
+	mockery -dir internal/wrapper -name ICursor

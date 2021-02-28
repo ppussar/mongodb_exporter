@@ -15,6 +15,7 @@ import (
 
 var log = logger.GetInstance()
 
+// An Exporter queries a mongodb to gather metrics and provide those on a prometheus http endpoint
 type Exporter struct {
 	srv        *internal.HttpServer
 	config     internal.Config
@@ -37,6 +38,7 @@ func printUsage() {
 	fmt.Printf("Usage: \n\t%s configuration.yaml\n", os.Args[0])
 }
 
+// NewExporter creates a new Exporter defined by the given config
 func NewExporter(config internal.Config) *Exporter {
 	return &Exporter{
 		config:     config,
@@ -72,7 +74,7 @@ func (e *Exporter) connect() {
 				e.updateCollectorConnection(con)
 			}
 		}
-		<- errorC
+		<-errorC
 	}
 }
 

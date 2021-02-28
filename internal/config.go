@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 )
 
+// ReadConfigFile Initializes a Config instance from a given file path
 func ReadConfigFile(configFile string) (Config, error) {
 	dat, err := ioutil.ReadFile(configFile)
 	if err != nil {
@@ -12,6 +13,7 @@ func ReadConfigFile(configFile string) (Config, error) {
 	}
 	return ReadConfig(dat)
 }
+
 // ReadConfig Parses given config content
 func ReadConfig(data []byte) (Config, error) {
 	c := Config{}

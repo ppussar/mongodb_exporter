@@ -9,18 +9,22 @@ import (
 	"sync"
 )
 
+// HttpServer serves endpoints from the given Config
 type HttpServer struct {
 	Port   int
 	config Config
 	server *netHttp.Server
 }
 
+// NewHttpServer creates a new instance of the HttpServer
 func NewHttpServer(config Config) *HttpServer {
 	return &HttpServer{
 		config: config,
 	}
 }
 
+// Starts the HttpServer
+// Returns a WaitGroup which will be released as soon as the server stops
 func (s *HttpServer) Start(wg *sync.WaitGroup) {
 	if err := registerHealthHandler(s.config.HTTP.Health, s.config.MongoDb.URI); err != nil {
 		log.Fatal(err.Error())
@@ -45,6 +49,7 @@ func (s *HttpServer) Start(wg *sync.WaitGroup) {
 	}()
 }
 
+// Shutdown stops the running server
 func (s *HttpServer) Shutdown(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }

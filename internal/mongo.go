@@ -27,13 +27,14 @@ func NewConnection(uri string) (wrapper.IConnection, error) {
 	err = mc.Connect(ctx)
 
 	client := Connection{
-		client:  mc,
+		client: mc,
 	}
 
 	return client, err
 }
 
-func (con Connection) Aggregate(db string, collection string, command string, ctx context.Context) (wrapper.ICursor, error) {
+// Aggregate executes a given aggregate query on the mongodb
+func (con Connection) Aggregate(ctx context.Context, db string, collection string, command string) (wrapper.ICursor, error) {
 	var pipeline interface{}
 	err := bson.UnmarshalExtJSON([]byte(command), true, &pipeline)
 	if err != nil {
@@ -44,7 +45,8 @@ func (con Connection) Aggregate(db string, collection string, command string, ct
 	return con.client.Database(db).Collection(collection).Aggregate(ctx, pipeline, opts)
 }
 
-func (con Connection) Find(db string, collection string, command string, ctx context.Context) (wrapper.ICursor, error) {
+// Find executes a given find query on the mongodb
+func (con Connection) Find(ctx context.Context, db string, collection string, command string) (wrapper.ICursor, error) {
 	var bdoc interface{}
 	err := bson.UnmarshalExtJSON([]byte(command), true, &bdoc)
 	if err != nil {

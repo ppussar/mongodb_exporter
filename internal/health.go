@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// RegisterHealthChecks initializes health checks for the Exporter and returns an http handler func
 func RegisterHealthChecks(mongoUrl string) (netHttp.HandlerFunc, error) {
 
 	mongoHttp := strings.Replace(mongoUrl, "mongodb://", "http://", 1)
@@ -24,7 +25,6 @@ func RegisterHealthChecks(mongoUrl string) (netHttp.HandlerFunc, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-	httpCheck = checks.Must(checks.NewHTTPCheck(httpCheckConf))
 
 	h := health.New()
 	err = h.RegisterCheck(&health.Config{

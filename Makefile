@@ -15,7 +15,7 @@ run:
 .PHONY: test
 test: ## Runs the go tests.
 	@echo "+ $@"
-	@$(GO) test -v -tags "$(BUILDTAGS) cgo" $(shell $(GO) list ./... | grep -v vendor)
+	@$(GO) test -v -tags "$(BUILDTAGS) cgo" $(shell $(GO) list ./... | grep -v wrapper | grep -v mocks)
 
 .PHONY: test-functional
 test-functional: ## Run functional tests
@@ -75,5 +75,5 @@ stop-demo:
 
 .PHONY: generate-mocks
 generate-mocks: ## regenerates the mocks for the tests
-	mockery -dir internal/wrapper -name IConnection
-	mockery -dir internal/wrapper -name ICursor
+	mockery -dir internal/wrapper -output internal/mocks -name IConnection
+	mockery -dir internal/wrapper -output internal/mocks -name ICursor

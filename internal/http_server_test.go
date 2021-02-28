@@ -31,19 +31,19 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("serves metrics endpoint", func(t *testing.T) {
-			resp, err := httpClient.Get(fmt.Sprintf("http://localhost:%v/metrics", underTest.Port))
-			if err != nil {
-				t.Fatal(err)
-			}
-			assert.Equal(t, "200 OK", resp.Status)
+		resp, err := httpClient.Get(fmt.Sprintf("http://localhost:%v/metrics", underTest.Port))
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "200 OK", resp.Status)
 	})
 
 	t.Run("serves liveliness endpoint", func(t *testing.T) {
-			resp, err := httpClient.Get(fmt.Sprintf("http://localhost:%v/live", underTest.Port))
-			if err != nil {
-				t.Fatal(err)
-			}
-			assert.Equal(t, "204 No Content", resp.Status)
+		resp, err := httpClient.Get(fmt.Sprintf("http://localhost:%v/live", underTest.Port))
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "204 No Content", resp.Status)
 	})
 
 	t.Run("serves health endpoint", func(t *testing.T) {

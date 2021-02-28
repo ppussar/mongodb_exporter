@@ -6,16 +6,17 @@ import (
 	"sync"
 )
 
-var Logger *zap.Logger
+var logger *zap.Logger
 var once sync.Once
 
+// GetInstance returns a logger instance
 func GetInstance() *zap.Logger {
 	once.Do(func() {
 		var err error
-		Logger, err = zap.NewProduction()
+		logger, err = zap.NewProduction()
 		if err != nil {
 			log.Fatalf("can't initialize zap logger: %v", err)
 		}
 	})
-	return Logger
+	return logger
 }

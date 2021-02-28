@@ -58,7 +58,7 @@ func TestCollect(t *testing.T) {
 		mongoCursor.On("Err").Return(nil).Once()
 		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
 		mongoMock := mocks.IConnection{}
-		mongoMock.On("Aggregate", metric.Db, metric.Collection, metric.Aggregate, mock.Anything).Return(&mongoCursor, nil).Once()
+		mongoMock.On("Aggregate", mock.Anything, metric.Db, metric.Collection, metric.Aggregate).Return(&mongoCursor, nil).Once()
 
 		c := NewCollector(metric, &mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
@@ -84,7 +84,7 @@ func TestCollect(t *testing.T) {
 
 		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
 		mongoMock := mocks.IConnection{}
-		mongoMock.On("Aggregate", metric.Db, metric.Collection, metric.Aggregate, mock.Anything).Return(&mongoCursor, nil).Once()
+		mongoMock.On("Aggregate", mock.Anything, metric.Db, metric.Collection, metric.Aggregate).Return(&mongoCursor, nil).Once()
 
 		c := NewCollector(metric, &mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
@@ -105,7 +105,7 @@ func TestCollect(t *testing.T) {
 		mongoCursor.On("Err").Return(nil).Once()
 		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
 		mongoMock := mocks.IConnection{}
-		mongoMock.On("Find", metric.Db, metric.Collection, metric.Find, mock.Anything).Return(&mongoCursor, nil).Once()
+		mongoMock.On("Find", mock.Anything, metric.Db, metric.Collection, metric.Find).Return(&mongoCursor, nil).Once()
 
 		c := NewCollector(metric, &mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)

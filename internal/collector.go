@@ -40,7 +40,7 @@ func NewCollector(m Metric, con wrapper.IConnection, errorC chan error) *Collect
 		config:           m,
 		Mongo:            con,
 		varTagValueNames: varTagValues,
-		ErrorC: errorC,
+		ErrorC:           errorC,
 	}
 }
 
@@ -57,9 +57,9 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 	var cur wrapper.ICursor
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	if len(col.config.Aggregate) != 0 {
-		cur, err = col.Mongo.Aggregate(col.config.Db, col.config.Collection, col.config.Aggregate, ctx)
+		cur, err = col.Mongo.Aggregate(ctx, col.config.Db, col.config.Collection, col.config.Aggregate)
 	} else if len(col.config.Find) != 0 {
-		cur, err = col.Mongo.Find(col.config.Db, col.config.Collection, col.config.Find, ctx)
+		cur, err = col.Mongo.Find(ctx, col.config.Db, col.config.Collection, col.config.Find)
 	} else {
 		log.Error(fmt.Sprintf("Nothing to do, check config of metric: %v", col))
 	}

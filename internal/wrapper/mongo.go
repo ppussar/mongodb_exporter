@@ -2,11 +2,13 @@ package wrapper
 
 import "context"
 
+// IConnection interface of mongo.Database
 type IConnection interface {
-	Aggregate(db string, collection string, command string, ctx context.Context) (ICursor, error)
-	Find(db string, collection string, command string, ctx context.Context) (ICursor, error)
+	Aggregate(ctx context.Context, db string, collection string, command string) (ICursor, error)
+	Find(ctx context.Context, db string, collection string, command string) (ICursor, error)
 }
 
+// ICursor interface of mongo.Cursor
 type ICursor interface {
 	Next(ctx context.Context) bool
 	Decode(val interface{}) error

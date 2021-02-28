@@ -14,13 +14,13 @@ type IConnection struct {
 	mock.Mock
 }
 
-// Aggregate provides a mock function with given fields: db, collection, command, ctx
-func (_m *IConnection) Aggregate(db string, collection string, command string, ctx context.Context) (wrapper.ICursor, error) {
-	ret := _m.Called(db, collection, command, ctx)
+// Aggregate provides a mock function with given fields: ctx, db, collection, command
+func (_m *IConnection) Aggregate(ctx context.Context, db string, collection string, command string) (wrapper.ICursor, error) {
+	ret := _m.Called(ctx, db, collection, command)
 
 	var r0 wrapper.ICursor
-	if rf, ok := ret.Get(0).(func(string, string, string, context.Context) wrapper.ICursor); ok {
-		r0 = rf(db, collection, command, ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) wrapper.ICursor); ok {
+		r0 = rf(ctx, db, collection, command)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(wrapper.ICursor)
@@ -28,8 +28,8 @@ func (_m *IConnection) Aggregate(db string, collection string, command string, c
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, context.Context) error); ok {
-		r1 = rf(db, collection, command, ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = rf(ctx, db, collection, command)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -37,13 +37,13 @@ func (_m *IConnection) Aggregate(db string, collection string, command string, c
 	return r0, r1
 }
 
-// Find provides a mock function with given fields: db, collection, command, ctx
-func (_m *IConnection) Find(db string, collection string, command string, ctx context.Context) (wrapper.ICursor, error) {
-	ret := _m.Called(db, collection, command, ctx)
+// Find provides a mock function with given fields: ctx, db, collection, command
+func (_m *IConnection) Find(ctx context.Context, db string, collection string, command string) (wrapper.ICursor, error) {
+	ret := _m.Called(ctx, db, collection, command)
 
 	var r0 wrapper.ICursor
-	if rf, ok := ret.Get(0).(func(string, string, string, context.Context) wrapper.ICursor); ok {
-		r0 = rf(db, collection, command, ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) wrapper.ICursor); ok {
+		r0 = rf(ctx, db, collection, command)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(wrapper.ICursor)
@@ -51,8 +51,8 @@ func (_m *IConnection) Find(db string, collection string, command string, ctx co
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, context.Context) error); ok {
-		r1 = rf(db, collection, command, ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = rf(ctx, db, collection, command)
 	} else {
 		r1 = ret.Error(1)
 	}

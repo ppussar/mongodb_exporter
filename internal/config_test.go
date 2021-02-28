@@ -1,4 +1,4 @@
-package inner
+package internal
 
 import (
 	"testing"
@@ -20,7 +20,7 @@ func TestParseNonYamlStringDoesReturnError(t *testing.T) {
 
 	_, err := ReadConfig(invalidConfig)
 
-	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `This is...` into inner.Config")
+	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `This is...` into internal.Config")
 }
 
 func TestParseMinimalConfig(t *testing.T) {
@@ -45,7 +45,7 @@ func TestParseInvalidFieldReturnsError(t *testing.T) {
 
 	_, err := ReadConfig(minimalConfig)
 
-	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 3: field invalid not found in type inner.http")
+	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 3: field invalid not found in type internal.http")
 }
 
 func TestParseInvalidValueReturnsError(t *testing.T) {

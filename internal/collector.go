@@ -1,41 +1,46 @@
-package inner
+package internal
 
 import (
 	"context"
-	"github.com/ppussar/mongodb_exporter/inner/wrapper"
-	"log"
-
+	"fmt"
+	"github.com/ppussar/mongodb_exporter/internal/logger"
+	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/mgo.v2/bson"
+	"time"
 )
 
 // Collector queries one prometheus metric from mongoDB
 type Collector struct {
 	desc             *prometheus.Desc
 	config           Metric
-	mongo            wrapper.IConnection
+	Mongo            wrapper.IConnection
 	varTagValueNames []string
+	ErrorC           chan error
 }
+
+var log = logger.GetInstance()
 
 //NewCollector constructor
 //initializes every descriptor and returns a pointer to the collector
-func NewCollector(c Metric, con wrapper.IConnection) *Collector {
-	varTagNames := make([]string, 0, len(c.TagAttributes))
-	varTagValues := make([]string, 0, len(c.TagAttributes))
-	for key, value := range c.TagAttributes {
+func NewCollector(m Metric, con wrapper.IConnection, errorC chan error) *Collector {
+	varTagNames := make([]string, 0, len(m.TagAttributes))
+	varTagValues := make([]string, 0, len(m.TagAttributes))
+	for key, value := range m.TagAttributes {
 		varTagNames = append(varTagNames, key)
 		varTagValues = append(varTagValues, value)
 	}
 	return &Collector{
 		desc: prometheus.NewDesc(
-			c.Name,
-			c.Help,
+			m.Name,
+			m.Help,
 			varTagNames,
-			c.Tags,
+			m.Tags,
 		),
-		config:           c,
-		mongo:            con,
+		config:           m,
+		Mongo:            con,
 		varTagValueNames: varTagValues,
+		ErrorC: errorC,
 	}
 }
 
@@ -50,23 +55,27 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	var err error
 	var cur wrapper.ICursor
-	ctx := context.Background()
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	if len(col.config.Aggregate) != 0 {
-		cur, err = col.mongo.Aggregate(col.config.Db, col.config.Collection, col.config.Aggregate, ctx)
+		cur, err = col.Mongo.Aggregate(col.config.Db, col.config.Collection, col.config.Aggregate, ctx)
 	} else if len(col.config.Find) != 0 {
-		cur, err = col.mongo.Find(col.config.Db, col.config.Collection, col.config.Find, ctx)
+		cur, err = col.Mongo.Find(col.config.Db, col.config.Collection, col.config.Find, ctx)
 	} else {
-		log.Fatal("Nothing to do, check config!")
+		log.Error(fmt.Sprintf("Nothing to do, check config of metric: %v", col))
 	}
 	if err != nil {
-		log.Fatal(err)
+		log.Error(fmt.Sprintf("Error during collect: %v", err))
+		col.ErrorC <- err
+		return
 	}
 	defer cur.Close(context.Background())
 	for cur.Next(ctx) {
 		var result bson.M
 		err := cur.Decode(&result)
 		if err != nil {
-			log.Fatal(err)
+			log.Error(fmt.Sprintf("Error during collect: %v", err))
+			col.ErrorC <- err
+			return
 		}
 
 		val := result[col.config.MetricsAttribute]
@@ -74,7 +83,8 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(col.desc, prometheus.GaugeValue, val.(float64), tagValues...)
 	}
 	if err := cur.Err(); err != nil {
-		log.Fatal(err)
+		log.Error(fmt.Sprintf("Error during collect: %v", err))
+		col.ErrorC <- err
 	}
 }
 
@@ -85,4 +95,8 @@ func (col *Collector) extractVarTagsValues(result bson.M) []string {
 		tagValues[i] = tagValue.(string)
 	}
 	return tagValues
+}
+
+func (col *Collector) String() string {
+	return col.desc.String()
 }

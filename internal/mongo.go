@@ -1,9 +1,9 @@
-package inner
+package internal
 
 import (
 	"context"
 	"fmt"
-	"github.com/ppussar/mongodb_exporter/inner/wrapper"
+	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,9 +20,16 @@ type Connection struct {
 // NewConnection opens a connection to mongoDB by using the given uri
 func NewConnection(uri string) (wrapper.IConnection, error) {
 	mc, err := mongo.NewClient(options.Client().ApplyURI(uri))
+	if err != nil {
+		return nil, err
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	err = mc.Connect(ctx)
+
 	client := Connection{
 		client:  mc,
 	}
+
 	return client, err
 }
 

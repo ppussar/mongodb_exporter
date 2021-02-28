@@ -17,6 +17,25 @@ test: ## Runs the go tests.
 	@echo "+ $@"
 	@$(GO) test -v -tags "$(BUILDTAGS) cgo" $(shell $(GO) list ./... | grep -v vendor)
 
+.PHONY: test-functional
+test-functional: ## Run functional tests
+	@${MAKE} GOARGS="${GOARGS} -failfast -race -run ^TestFunctional.*\$$\$$" TEST_REPORT=functional test
+
+
+.PHONY: test-integration-cmd
+test-integration-cmd: ## Run integration tests cmd. Use 'test-integration' target
+	@${MAKE} GOARGS="${GOARGS} -run ^TestIntegration.*\$$\$$" TEST_REPORT=integration test
+
+.PHONY: test-integration
+test-integration: clear ## Run the integration-tests in docker
+	docker-compose -f build/docker-compose.test.yml build $$(echo ${DOCKER_BUILD_ARGS} | sed -e 's/--network host//')
+	docker-compose -f build/docker-compose.test.yml up --exit-code-from tester
+
+.PHONY: test-integration-clear
+test-integration-clear: clear ## Cleans up the test env for docker
+	docker-compose -f build/docker-compose.test.yml down --volumes
+
+
 .PHONY: cover
 cover: ## Runs go test with coverage.
 	@echo "" > coverage.txt

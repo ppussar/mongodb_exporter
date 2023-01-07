@@ -2,7 +2,7 @@ package internal
 
 import (
 	"fmt"
-	"github.com/AppsFlyer/go-sundheit"
+	gosundheit "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 	healthHttp "github.com/AppsFlyer/go-sundheit/http"
 	netHttp "net/http"
@@ -26,11 +26,12 @@ func RegisterHealthChecks(mongoUrl string) (netHttp.HandlerFunc, error) {
 		return nil, err
 	}
 
-	h := health.New()
-	err = h.RegisterCheck(&health.Config{
-		Check:           httpCheck,
-		ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
-	})
+	h := gosundheit.New()
+	err = h.RegisterCheck(
+		httpCheck,
+		gosundheit.InitialDelay(time.Second),
+		gosundheit.ExecutionPeriod(10*time.Second),
+	)
 
 	if err != nil {
 		fmt.Println("Failed to register check: ", err)

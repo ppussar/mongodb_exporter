@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/AppsFlyer/go-sundheit v0.5.0
 	github.com/prometheus/client_golang v1.14.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.mongodb.org/mongo-driver v1.11.4
 	go.uber.org/zap v1.24.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22

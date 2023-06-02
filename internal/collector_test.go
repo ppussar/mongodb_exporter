@@ -26,7 +26,7 @@ func TestCollector(t *testing.T) {
 		con := Connection{}
 		c := NewCollector(metric, con, make(chan error, 1))
 
-		assert.Equal(t, "Desc{fqName: \"name\", help: \"help\", constLabels: {tagKey=\"tagValue\"}, variableLabels: [tagAttrKey]}", c.String())
+		assert.Equal(t, "Desc{fqName: \"name\", help: \"help\", constLabels: {tagKey=\"tagValue\"}, variableLabels: [{tagAttrKey <nil>}]}", c.String())
 	})
 }
 
@@ -92,7 +92,7 @@ func TestCollect(t *testing.T) {
 
 		assert.Equal(t, 1, len(ch))
 		actualMetric := <-ch
-		assert.Equal(t, `Desc{fqName: "myMetric", help: "myHelp", constLabels: {constTag="value"}, variableLabels: [dynTag]}`, actualMetric.Desc().String())
+		assert.Equal(t, `Desc{fqName: "myMetric", help: "myHelp", constLabels: {constTag="value"}, variableLabels: [{dynTag <nil>}]}`, actualMetric.Desc().String())
 		mongoMock.AssertExpectations(t)
 	})
 

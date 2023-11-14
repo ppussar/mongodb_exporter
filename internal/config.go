@@ -2,12 +2,12 @@ package internal
 
 import (
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"os"
 )
 
 // ReadConfigFile Initializes a Config instance from a given file path
 func ReadConfigFile(configFile string) (Config, error) {
-	dat, err := ioutil.ReadFile(configFile)
+	dat, err := os.ReadFile(configFile)
 	if err != nil {
 		return Config{}, err
 	}

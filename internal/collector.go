@@ -21,8 +21,8 @@ type Collector struct {
 
 var log = logger.GetInstance()
 
-//NewCollector constructor
-//initializes every descriptor and returns a pointer to the collector
+// NewCollector constructor
+// initializes every descriptor and returns a pointer to the collector
 func NewCollector(m Metric, con wrapper.IConnection, errorC chan error) *Collector {
 	varTagNames := make([]string, 0, len(m.TagAttributes))
 	varTagValues := make([]string, 0, len(m.TagAttributes))
@@ -44,18 +44,19 @@ func NewCollector(m Metric, con wrapper.IConnection, errorC chan error) *Collect
 	}
 }
 
-//Describe must be implemented by a prometheus collector
-//It essentially writes all descriptors to the prometheus desc channel.
+// Describe must be implemented by a prometheus collector
+// It essentially writes all descriptors to the prometheus desc channel.
 func (col *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- col.desc
 }
 
-//Collect implements required collect function for all prometheus collectors
+// Collect implements required collect function for all prometheus collectors
 func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	var err error
 	var cur wrapper.ICursor
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	if len(col.config.Aggregate) != 0 {
 		cur, err = col.Mongo.Aggregate(ctx, col.config.Db, col.config.Collection, col.config.Aggregate)
 	} else if len(col.config.Find) != 0 {

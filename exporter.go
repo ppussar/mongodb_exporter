@@ -7,13 +7,16 @@ import (
 	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"github.com/prometheus/client_golang/prometheus"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ppussar/mongodb_exporter/internal"
 )
 
 var log = logger.GetInstance()
+var instance *Exporter = nil
 
 // An Exporter queries a mongodb to gather metrics and provide those on a prometheus http endpoint
 type Exporter struct {
@@ -27,11 +30,31 @@ func main() {
 		printUsage()
 		os.Exit(1)
 	}
+	handleSignals()
 	config, err := internal.ReadConfigFile(os.Args[1])
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	NewExporter(config).start()
+	instance = NewExporter(config)
+	instance.start()
+}
+
+func handleSignals() {
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	go func() {
+		<-sigc
+		if instance != nil {
+			err := instance.shutdown(context.Background())
+			if err != nil {
+				return
+			}
+		}
+	}()
 }
 
 func printUsage() {

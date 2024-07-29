@@ -3,7 +3,7 @@ module github.com/ppussar/mongodb_exporter
 go 1.21
 
 require (
-	github.com/AppsFlyer/go-sundheit v0.5.1
+	github.com/AppsFlyer/go-sundheit v0.6.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.16.0

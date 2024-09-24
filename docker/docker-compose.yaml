@@ -1,5 +1,4 @@
 ---
-version: '3.8'
 services:
   database:
     image: 'mongo:4.4.18'

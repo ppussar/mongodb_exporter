@@ -1,3 +1,3 @@
 FROM alpine
 ADD mongodb_exporter /
-ENTRYPOINT /mongodb_exporter $CONFIG
+ENTRYPOINT ["/bin/sh", "-c", "/mongodb_exporter $CONFIG"]

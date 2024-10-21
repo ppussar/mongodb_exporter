@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/AppsFlyer/go-sundheit v0.6.0
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.17.0
 	go.uber.org/zap v1.27.0

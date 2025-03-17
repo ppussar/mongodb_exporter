@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
@@ -23,7 +24,7 @@ func NewHttpServer(config Config) *HttpServer {
 	}
 }
 
-// Starts the HttpServer
+// Start starts the HttpServer
 // Returns a WaitGroup which will be released as soon as the server stops
 func (s *HttpServer) Start(wg *sync.WaitGroup) {
 	if err := registerHealthHandler(s.config.HTTP.Health, s.config.MongoDb.URI); err != nil {
@@ -43,7 +44,7 @@ func (s *HttpServer) Start(wg *sync.WaitGroup) {
 		defer wg.Done()
 		defer log.Info("Stopping server")
 		log.Info(fmt.Sprintf("Serving endpoint on port: %v", s.Port))
-		if err := s.server.Serve(listener); err != netHttp.ErrServerClosed {
+		if err := s.server.Serve(listener); !errors.Is(err, netHttp.ErrServerClosed) {
 			log.Fatal(fmt.Sprintf("ListenAndServe(): %v", err))
 		}
 	}()

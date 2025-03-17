@@ -106,7 +106,6 @@ func (e *Exporter) shutdown(ctx context.Context) error {
 }
 
 func (e *Exporter) registerCollectors(configs []internal.Metric, con wrapper.IConnection, errorC chan error) {
-	//e.collectors = make([]*internal.Collector, len(configs))
 	for _, c := range configs {
 		collector := internal.NewCollector(c, con, errorC)
 		e.collectors = append(e.collectors, collector)

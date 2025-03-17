@@ -1,6 +1,6 @@
 module github.com/ppussar/mongodb_exporter
 
-go 1.21
+go 1.24
 
 require (
 	github.com/AppsFlyer/go-sundheit v0.6.0

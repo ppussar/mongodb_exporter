@@ -2,7 +2,6 @@ package logger
 
 import (
 	"go.uber.org/zap"
-	"log"
 	"sync"
 )
 
@@ -15,7 +14,7 @@ func GetInstance() *zap.Logger {
 		var err error
 		logger, err = zap.NewProduction()
 		if err != nil {
-			log.Fatalf("can't initialize zap logger: %v", err)
+			zap.S().Fatalf("can't initialize zap logger: %v", err)
 		}
 	})
 	return logger

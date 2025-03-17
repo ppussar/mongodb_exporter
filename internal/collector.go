@@ -52,7 +52,6 @@ func (col *Collector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements required collect function for all prometheus collectors
 func (col *Collector) Collect(ch chan<- prometheus.Metric) {
-
 	var err error
 	var cur wrapper.ICursor
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

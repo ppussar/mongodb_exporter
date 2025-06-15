@@ -20,6 +20,7 @@ type Collector struct {
 }
 
 var log = logger.GetInstance()
+var collectErrorMsg = "Error during collect: %v"
 
 // NewCollector constructor
 // initializes every descriptor and returns a pointer to the collector
@@ -64,16 +65,22 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 		log.Error(fmt.Sprintf("Nothing to do, check config of metric: %v", col))
 	}
 	if err != nil {
-		log.Error(fmt.Sprintf("Error during collect: %v", err))
+		log.Error(fmt.Sprintf(collectErrorMsg, err))
 		col.ErrorC <- err
 		return
 	}
-	defer cur.Close(context.Background())
+	defer func(cur wrapper.ICursor, ctx context.Context) {
+		err := cur.Close(ctx)
+		if err != nil {
+			col.ErrorC <- err
+			return
+		}
+	}(cur, context.Background())
 	for cur.Next(ctx) {
 		var result bson.M
 		err := cur.Decode(&result)
 		if err != nil {
-			log.Error(fmt.Sprintf("Error during collect: %v", err))
+			log.Error(fmt.Sprintf(collectErrorMsg, err))
 			col.ErrorC <- err
 			return
 		}
@@ -83,7 +90,7 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(col.desc, prometheus.GaugeValue, val.(float64), tagValues...)
 	}
 	if err := cur.Err(); err != nil {
-		log.Error(fmt.Sprintf("Error during collect: %v", err))
+		log.Error(fmt.Sprintf(collectErrorMsg, err))
 		col.ErrorC <- err
 	}
 }

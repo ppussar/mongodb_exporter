@@ -3,11 +3,12 @@ package internal
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/ppussar/mongodb_exporter/internal/logger"
 	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/mgo.v2/bson"
-	"time"
 )
 
 // Collector queries one prometheus metric from mongoDB
@@ -85,9 +86,26 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 			return
 		}
 
+		//fmt.Println(result)
 		val := result[col.config.MetricsAttribute]
+		var floatVal float64
+		switch v := val.(type) {
+		case float64:
+			floatVal = v
+		case int32:
+			floatVal = float64(v)
+		case int64:
+			floatVal = float64(v)
+		case int:
+			floatVal = float64(v)
+		default:
+			log.Error(fmt.Sprintf("unsupported metric value type %T for %v", val, col.config.MetricsAttribute))
+			col.ErrorC <- fmt.Errorf("unsupported type: %T", val)
+			return
+		}
 		tagValues := col.extractVarTagsValues(result)
-		ch <- prometheus.MustNewConstMetric(col.desc, prometheus.GaugeValue, val.(float64), tagValues...)
+
+		ch <- prometheus.MustNewConstMetric(col.desc, prometheus.GaugeValue, floatVal, tagValues...)
 	}
 	if err := cur.Err(); err != nil {
 		log.Error(fmt.Sprintf(collectErrorMsg, err))

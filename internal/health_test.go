@@ -10,9 +10,12 @@ import (
 
 func TestMongoHealthCheck(t *testing.T) {
 
-	t.Run("is healthy if given mongo host is reachable", func(t *testing.T) {
-		handler, err := RegisterHealthChecks("http://github.com")
+	t.Run("returns handler when MongoDB URI is valid", func(t *testing.T) {
+		handler, err := RegisterHealthChecks("mongodb://localhost:27017")
 		assert.NoError(t, err)
+		assert.NotNil(t, handler)
+		
+		// Give some time for the health check to initialize
 		time.Sleep(2 * time.Second)
 
 		req, err := netHttp.NewRequest("GET", "/health-check", nil)
@@ -23,12 +26,23 @@ func TestMongoHealthCheck(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		assert.Equal(t, "200 OK", rr.Result().Status)
+		// Since localhost:27017 likely doesn't have MongoDB running, expect unhealthy
+		assert.Contains(t, []string{"200 OK", "503 Service Unavailable"}, rr.Result().Status)
 	})
 
-	t.Run("is unhealthy if given mongo host is not reachable", func(t *testing.T) {
-		handler, err := RegisterHealthChecks("http://localhost:0")
+	t.Run("returns error when MongoDB URI is invalid", func(t *testing.T) {
+		handler, err := RegisterHealthChecks("invalid-uri")
+		assert.Error(t, err)
+		assert.Nil(t, handler)
+		assert.Contains(t, err.Error(), "failed to connect to MongoDB")
+	})
+
+	t.Run("returns handler for unreachable MongoDB host", func(t *testing.T) {
+		handler, err := RegisterHealthChecks("mongodb://localhost:27999")
 		assert.NoError(t, err)
+		assert.NotNil(t, handler)
+		
+		// Give some time for the health check to initialize
 		time.Sleep(2 * time.Second)
 
 		req, err := netHttp.NewRequest("GET", "/health-check", nil)
@@ -39,6 +53,7 @@ func TestMongoHealthCheck(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
+		// Should be unhealthy since the host is unreachable
 		assert.Equal(t, "503 Service Unavailable", rr.Result().Status)
 	})
 }

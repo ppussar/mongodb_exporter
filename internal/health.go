@@ -1,41 +1,54 @@
 package internal
 
 import (
+	"context"
 	"fmt"
-	gosundheit "github.com/AppsFlyer/go-sundheit"
+	netHttp "net/http"
+	"time"
+
+	"github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 	healthHttp "github.com/AppsFlyer/go-sundheit/http"
-	netHttp "net/http"
-	"strings"
-	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-// RegisterHealthChecks initializes health checks for the Exporter and returns an http handler func
-func RegisterHealthChecks(mongoUrl string) (netHttp.HandlerFunc, error) {
+// RegisterHealthChecks creates and registers a MongoDB health check.
+// It returns an http.HandlerFunc that serves the health status in JSON.
+func RegisterHealthChecks(mongoURI string) (netHttp.HandlerFunc, error) {
+	// Connect to MongoDB
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	mongoHttp := strings.Replace(mongoUrl, "mongodb://", "http://", 1)
-	httpCheckConf := checks.HTTPCheckConfig{
-		CheckName: "mongo.url.check",
-		Timeout:   1 * time.Second,
-		URL:       mongoHttp,
-	}
-
-	httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
+	clientOpts := options.Client().ApplyURI(mongoURI)
+	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
 
+	// Create gosundheit instance
 	h := gosundheit.New()
-	err = h.RegisterCheck(
-		httpCheck,
-		gosundheit.InitialDelay(time.Second),
+
+	// Create MongoDB ping check
+	mongoCheck := &checks.CustomCheck{
+		CheckName: "mongodb.ping",
+		CheckFunc: func(ctx context.Context) (interface{}, error) {
+			ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+			return nil, client.Ping(ctx, readpref.Primary())
+		},
+	}
+
+	// Register the MongoDB ping check
+	err = h.RegisterCheck(mongoCheck,
 		gosundheit.ExecutionPeriod(10*time.Second),
+		gosundheit.InitialDelay(1*time.Second),
 	)
 
 	if err != nil {
-		fmt.Println("Failed to register check: ", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to register MongoDB health check: %w", err)
 	}
 
 	return healthHttp.HandleHealthJSON(h), nil

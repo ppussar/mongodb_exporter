@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
 	netHttp "net/http"
 	"sync"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // HttpServer serves endpoints from the given Config
@@ -24,7 +25,7 @@ func NewHttpServer(config Config) *HttpServer {
 	}
 }
 
-// Start starts the HttpServer
+// Start the HTTP server
 // Returns a WaitGroup which will be released as soon as the server stops
 func (s *HttpServer) Start(wg *sync.WaitGroup) {
 	if err := registerHealthHandler(s.config.HTTP.Health, s.config.MongoDb.URI); err != nil {

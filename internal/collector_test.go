@@ -1,10 +1,11 @@
 package internal
 
 import (
+	"testing"
+
 	"github.com/ppussar/mongodb_exporter/internal/mocks"
 	"github.com/stretchr/testify/mock"
 	"gopkg.in/mgo.v2/bson"
-	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"

@@ -9,10 +9,10 @@ import (
 func TestParseEmptyConfigDoesNotReturnError(t *testing.T) {
 	var emptyConfig []byte
 
-	c, err := ReadConfig(emptyConfig)
+	_, err := ReadConfig(emptyConfig)
 
-	assert.Equal(t, err, nil, "No error expected")
-	assert.Equal(t, c, Config{}, "Empty Config struct expected")
+	assert.Error(t, err, "Error expected due to validation")
+	assert.Contains(t, err.Error(), "config validation failed")
 }
 
 func TestParseNonYamlStringDoesReturnError(t *testing.T) {
@@ -20,7 +20,8 @@ func TestParseNonYamlStringDoesReturnError(t *testing.T) {
 
 	_, err := ReadConfig(invalidConfig)
 
-	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `This is...` into internal.Config")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse config")
 }
 
 func TestParseMinimalConfig(t *testing.T) {
@@ -28,11 +29,19 @@ func TestParseMinimalConfig(t *testing.T) {
 	yaml += "version: 1.0\n"
 	yaml += "http:\n"
 	yaml += "  port: 9090\n"
+	yaml += "mongodb:\n"
+	yaml += "  uri: mongodb://localhost:27017\n"
+	yaml += "metrics:\n"
+	yaml += "  - name: test_metric\n"
+	yaml += "    db: testdb\n"
+	yaml += "    collection: testcol\n"
+	yaml += "    find: '{}'\n"
+	yaml += "    metricsAttribute: count\n"
 	minimalConfig := []byte(yaml)
 
 	c, err := ReadConfig(minimalConfig)
 
-	assert.Equal(t, err, nil, "No error expected")
+	assert.NoError(t, err, "No error expected for valid config")
 	assert.Equal(t, c.HTTP.Port, 9090)
 }
 
@@ -45,7 +54,8 @@ func TestParseInvalidFieldReturnsError(t *testing.T) {
 
 	_, err := ReadConfig(minimalConfig)
 
-	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 3: field invalid not found in type internal.http")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse config")
 }
 
 func TestParseInvalidValueReturnsError(t *testing.T) {
@@ -57,5 +67,6 @@ func TestParseInvalidValueReturnsError(t *testing.T) {
 
 	_, err := ReadConfig(minimalConfig)
 
-	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `abc` into int")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse config")
 }

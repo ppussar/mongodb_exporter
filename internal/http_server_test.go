@@ -14,12 +14,12 @@ import (
 func TestHttpServer(t *testing.T) {
 
 	underTest := NewHttpServer(Config{
-		HTTP: http{
+		HTTP: HTTP{
 			Prometheus: "/metrics",
 			Health:     "/health",
 			Liveliness: "/live",
 		},
-		MongoDb: mongoDb{URI: "mongodb://localhost:27017"},
+		MongoDb: MongoDB{URI: "mongodb://localhost:27017"},
 	})
 
 	serverRunWg := &sync.WaitGroup{}

@@ -16,13 +16,15 @@ import (
 )
 
 var log = logger.GetInstance()
-var instance *Exporter = nil
 
 // An Exporter queries a mongodb to gather metrics and provide those on a prometheus http endpoint
 type Exporter struct {
 	srv        *internal.HttpServer
 	config     internal.Config
 	collectors []*internal.Collector
+	mu         sync.RWMutex
+	ctx        context.Context
+	cancel     context.CancelFunc
 }
 
 func main() {
@@ -30,16 +32,28 @@ func main() {
 		printUsage()
 		os.Exit(1)
 	}
-	handleSignals()
+	
 	config, err := internal.ReadConfigFile(os.Args[1])
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Error(fmt.Sprintf("Failed to read config: %v", err))
+		os.Exit(1)
 	}
-	instance = NewExporter(config)
-	instance.start()
+	
+	if err := validateConfig(config); err != nil {
+		log.Error(fmt.Sprintf("Invalid config: %v", err))
+		os.Exit(1)
+	}
+	
+	exporter := NewExporter(config)
+	handleSignals(exporter)
+	
+	if err := exporter.start(); err != nil {
+		log.Error(fmt.Sprintf("Failed to start exporter: %v", err))
+		os.Exit(1)
+	}
 }
 
-func handleSignals() {
+func handleSignals(exporter *Exporter) {
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc,
 		syscall.SIGHUP,
@@ -48,13 +62,41 @@ func handleSignals() {
 		syscall.SIGQUIT)
 	go func() {
 		<-sigc
-		if instance != nil {
-			err := instance.shutdown(context.Background())
-			if err != nil {
-				return
-			}
+		log.Info("Received shutdown signal")
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := exporter.shutdown(ctx); err != nil {
+			log.Error(fmt.Sprintf("Shutdown error: %v", err))
 		}
+		os.Exit(0)
 	}()
+}
+
+func validateConfig(config internal.Config) error {
+	if config.HTTP.Port <= 0 || config.HTTP.Port > 65535 {
+		return fmt.Errorf("invalid port: %d", config.HTTP.Port)
+	}
+	if config.MongoDb.URI == "" {
+		return fmt.Errorf("mongodb URI is required")
+	}
+	for i, metric := range config.Metrics {
+		if metric.Name == "" {
+			return fmt.Errorf("metric[%d]: name is required", i)
+		}
+		if metric.Db == "" {
+			return fmt.Errorf("metric[%d]: db is required", i)
+		}
+		if metric.Collection == "" {
+			return fmt.Errorf("metric[%d]: collection is required", i)
+		}
+		if metric.Find == "" && metric.Aggregate == "" {
+			return fmt.Errorf("metric[%d]: either find or aggregate is required", i)
+		}
+		if metric.MetricsAttribute == "" {
+			return fmt.Errorf("metric[%d]: metricsAttribute is required", i)
+		}
+	}
+	return nil
 }
 
 func printUsage() {
@@ -63,14 +105,17 @@ func printUsage() {
 
 // NewExporter creates a new Exporter defined by the given config
 func NewExporter(config internal.Config) *Exporter {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Exporter{
 		config:     config,
 		srv:        internal.NewHttpServer(config),
 		collectors: make([]*internal.Collector, 0),
+		ctx:        ctx,
+		cancel:     cancel,
 	}
 }
 
-func (e *Exporter) start() {
+func (e *Exporter) start() error {
 	go e.connect()
 
 	wg := &sync.WaitGroup{}
@@ -78,30 +123,51 @@ func (e *Exporter) start() {
 	wg.Add(1)
 	e.srv.Start(wg)
 	wg.Wait()
+	return nil
 }
 
 func (e *Exporter) connect() {
-	errorC := make(chan error, 1)
+	errorC := make(chan error, 10) // Buffered to prevent blocking
 
 	for {
+		select {
+		case <-e.ctx.Done():
+			return
+		default:
+		}
+
 		con, err := internal.NewConnection(e.config.MongoDb.URI)
 		if err != nil {
 			log.Info(fmt.Sprintf("Error during connection creation: %v; Retry in 2s...", err))
-			time.Sleep(2 * time.Second)
+			select {
+			case <-time.After(2 * time.Second):
+			case <-e.ctx.Done():
+				return
+			}
 			continue
 		}
+		
 		if con != nil {
+			e.mu.Lock()
 			if len(e.collectors) == 0 {
 				e.registerCollectors(e.config.Metrics, con, errorC)
 			} else {
 				e.updateCollectorConnection(con)
 			}
+			e.mu.Unlock()
 		}
-		<-errorC
+		
+		select {
+		case err := <-errorC:
+			log.Error(fmt.Sprintf("Collector error: %v", err))
+		case <-e.ctx.Done():
+			return
+		}
 	}
 }
 
 func (e *Exporter) shutdown(ctx context.Context) error {
+	e.cancel()
 	return e.srv.Shutdown(ctx)
 }
 
@@ -117,6 +183,6 @@ func (e *Exporter) registerCollectors(configs []internal.Metric, con wrapper.ICo
 func (e *Exporter) updateCollectorConnection(con wrapper.IConnection) {
 	for _, curCollector := range e.collectors {
 		log.Info("Update connection in collector: " + curCollector.String())
-		curCollector.Mongo = con
+		curCollector.UpdateConnection(con)
 	}
 }

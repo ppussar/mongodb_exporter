@@ -138,6 +138,7 @@ func (e *Exporter) connect() {
 
 		con, err := internal.NewConnection(e.config.MongoDb.URI)
 		if err != nil {
+			internal.ConnectionStatus.WithLabelValues(e.config.MongoDb.URI).Set(0)
 			log.Info(fmt.Sprintf("Error during connection creation: %v; Retry in 2s...", err))
 			select {
 			case <-time.After(2 * time.Second):
@@ -148,6 +149,7 @@ func (e *Exporter) connect() {
 		}
 		
 		if con != nil {
+			internal.ConnectionStatus.WithLabelValues(e.config.MongoDb.URI).Set(1)
 			e.mu.Lock()
 			if len(e.collectors) == 0 {
 				e.registerCollectors(e.config.Metrics, con, errorC)
@@ -159,6 +161,7 @@ func (e *Exporter) connect() {
 		
 		select {
 		case err := <-errorC:
+			internal.ConnectionStatus.WithLabelValues(e.config.MongoDb.URI).Set(0)
 			log.Error(fmt.Sprintf("Collector error: %v", err))
 		case <-e.ctx.Done():
 			return

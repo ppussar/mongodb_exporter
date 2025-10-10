@@ -49,8 +49,8 @@ push-image:
 .PHONY: start-demo
 start-demo: image
 	@docker compose -f docker/docker-compose.yaml up --build -d
-	@echo "\ncurl localhost:9090/prometheus | grep fruitstore"
-	@curl -s localhost:9090/prometheus | grep fruitstore
+	@echo "\ncurl localhost:9090/prometheus | grep fruitstore_"
+	@curl -s localhost:9090/prometheus | grep fruitstore_
 
 .PHONY: stop-demo
 stop-demo:

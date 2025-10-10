@@ -2,11 +2,12 @@ package internal
 
 import (
 	"fmt"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 var prometheusNameRegex = regexp.MustCompile(`^[a-zA-Z_:][a-zA-Z0-9_:]*$`)
@@ -20,18 +21,45 @@ func ReadConfigFile(configFile string) (Config, error) {
 	return ReadConfig(dat)
 }
 
-// ReadConfig Parses given config content
+// ReadConfig Parses given config content and applies environment variable overrides
 func ReadConfig(data []byte) (Config, error) {
 	c := Config{}
 	if err := yaml.UnmarshalStrict(data, &c); err != nil {
 		return Config{}, fmt.Errorf("failed to parse config: %w", err)
 	}
 	
+	// Apply environment variable overrides
+	applyEnvOverrides(&c)
+	
 	if err := validateConfigStructure(c); err != nil {
 		return Config{}, fmt.Errorf("config validation failed: %w", err)
 	}
 	
 	return c, nil
+}
+
+// applyEnvOverrides applies environment variable overrides to config
+func applyEnvOverrides(c *Config) {
+	// HTTP overrides
+	if port := os.Getenv("HTTP_PORT"); port != "" {
+		if p, err := strconv.Atoi(port); err == nil {
+			c.HTTP.Port = p
+		}
+	}
+	if path := os.Getenv("HTTP_PROMETHEUS"); path != "" {
+		c.HTTP.Prometheus = path
+	}
+	if health := os.Getenv("HTTP_HEALTH"); health != "" {
+		c.HTTP.Health = health
+	}
+	if live := os.Getenv("HTTP_LIVELINESS"); live != "" {
+		c.HTTP.Liveliness = live
+	}
+	
+	// MongoDB overrides
+	if uri := os.Getenv("MONGODB_URI"); uri != "" {
+		c.MongoDb.URI = uri
+	}
 }
 
 func validateConfigStructure(c Config) error {

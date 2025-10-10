@@ -68,6 +68,7 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 	col.mu.RUnlock()
 	
 	if mongo == nil {
+		QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "no_connection").Inc()
 		col.sendError(fmt.Errorf("no MongoDB connection available"))
 		return
 	}
@@ -77,17 +78,34 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	var cur wrapper.ICursor
 	var err error
+	var queryType string
+	
+	// Track active query
+	ActiveQueries.WithLabelValues(col.config.Db, col.config.Collection).Inc()
+	defer ActiveQueries.WithLabelValues(col.config.Db, col.config.Collection).Dec()
+	
+	// Start timing
+	timer := prometheus.NewTimer(QueryDuration.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, queryType))
+	defer timer.ObserveDuration()
 	
 	if len(col.config.Aggregate) != 0 {
+		queryType = "aggregate"
 		cur, err = mongo.Aggregate(ctx, col.config.Db, col.config.Collection, col.config.Aggregate)
 	} else if len(col.config.Find) != 0 {
+		queryType = "find"
 		cur, err = mongo.Find(ctx, col.config.Db, col.config.Collection, col.config.Find)
 	} else {
+		QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "no_query").Inc()
 		col.sendError(fmt.Errorf("no query configured for metric: %s", col.config.Name))
 		return
 	}
 	
+	// Update timer with correct query type
+	timer = prometheus.NewTimer(QueryDuration.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, queryType))
+	defer timer.ObserveDuration()
+	
 	if err != nil {
+		QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "query_failed").Inc()
 		col.sendError(fmt.Errorf("query failed: %w", err))
 		return
 	}
@@ -95,36 +113,47 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 	defer func() {
 		if cur != nil {
 			if err := cur.Close(ctx); err != nil {
+				QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "cursor_close_failed").Inc()
 				col.sendError(fmt.Errorf("cursor close failed: %w", err))
 			}
 		}
 	}()
 
+	metricsCount := 0
 	for cur.Next(ctx) {
 		var result bson.M
 		if err := cur.Decode(&result); err != nil {
+			QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "decode_failed").Inc()
 			col.sendError(fmt.Errorf("decode failed: %w", err))
 			return
 		}
 
 		floatVal, err := col.extractMetricValue(result)
 		if err != nil {
+			QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "extract_value_failed").Inc()
 			col.sendError(err)
 			return
 		}
 
 		tagValues, err := col.extractVarTagsValues(result)
 		if err != nil {
+			QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "extract_tags_failed").Inc()
 			col.sendError(err)
 			return
 		}
 
 		ch <- prometheus.MustNewConstMetric(col.desc, prometheus.GaugeValue, floatVal, tagValues...)
+		metricsCount++
 	}
 	
 	if err := cur.Err(); err != nil {
+		QueryErrors.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, "cursor_iteration_failed").Inc()
 		col.sendError(fmt.Errorf("cursor iteration failed: %w", err))
+		return
 	}
+	
+	// Track successful collection
+	MetricsCollected.WithLabelValues(col.config.Name).Add(float64(metricsCount))
 }
 
 func (col *Collector) extractMetricValue(result bson.M) (float64, error) {

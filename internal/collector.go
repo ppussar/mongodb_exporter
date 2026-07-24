@@ -97,7 +97,7 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// Fix 4: start timer only after queryType is known
+	// start timer only after queryType is known
 	timer := prometheus.NewTimer(QueryDuration.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, queryType))
 	defer timer.ObserveDuration()
 

@@ -38,9 +38,7 @@ clean:
 
 .PHONY: image
 image:
-	CGO_ENABLED=0 GOOS=linux $(GO) build -a -installsuffix cgo -o $(BIN)/mongodb_exporter .
-	@cp docker/Dockerfile $(BIN)
-	@docker build -t $(IMAGE):$(VERSION) $(BIN)
+	@docker build -f docker/Dockerfile -t $(IMAGE):$(VERSION) .
 
 .PHONY: push-image
 push-image:

@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"fmt"
 	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"time"
 
@@ -38,7 +37,7 @@ func (con Connection) Aggregate(ctx context.Context, db string, collection strin
 	var pipeline interface{}
 	err := bson.UnmarshalExtJSON([]byte(command), true, &pipeline)
 	if err != nil {
-		fmt.Println(command)
+		log.Error("failed to parse aggregate command: " + command)
 		return nil, err
 	}
 	opts := options.Aggregate().SetMaxTime(2 * time.Second)
@@ -50,7 +49,7 @@ func (con Connection) Find(ctx context.Context, db string, collection string, co
 	var bdoc interface{}
 	err := bson.UnmarshalExtJSON([]byte(command), true, &bdoc)
 	if err != nil {
-		fmt.Println(command)
+		log.Error("failed to parse find command: " + command)
 		return nil, err
 	}
 	return con.client.Database(db).Collection(collection).Find(ctx, &bdoc)

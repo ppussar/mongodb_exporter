@@ -19,7 +19,8 @@ services:
 
   exporter:
     build:
-      context: ../bin
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: exporter
     environment:
       CONFIG: "/configuration.yaml"

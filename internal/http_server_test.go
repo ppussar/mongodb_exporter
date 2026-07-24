@@ -17,7 +17,7 @@ func TestHttpServer(t *testing.T) {
 		HTTP: HTTP{
 			Prometheus: "/metrics",
 			Health:     "/health",
-			Liveliness: "/live",
+			Liveness: "/live",
 		},
 		MongoDb: MongoDB{URI: "mongodb://localhost:27017"},
 	})
@@ -39,7 +39,7 @@ func TestHttpServer(t *testing.T) {
 		assert.Equal(t, "200 OK", resp.Status)
 	})
 
-	t.Run("serves liveliness endpoint", func(t *testing.T) {
+	t.Run("serves liveness endpoint", func(t *testing.T) {
 		resp, err := httpClient.Get(fmt.Sprintf("http://localhost:%v/live", underTest.Port))
 		if err != nil {
 			t.Fatal(err)

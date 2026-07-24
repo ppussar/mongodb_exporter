@@ -13,9 +13,10 @@ import (
 
 // HttpServer serves endpoints from the given Config
 type HttpServer struct {
-	Port   int
-	config Config
-	server *netHttp.Server
+	Port          int
+	config        Config
+	server        *netHttp.Server
+	healthCloser  func(context.Context) error
 }
 
 // NewHttpServer creates a new instance of the HttpServer
@@ -28,9 +29,11 @@ func NewHttpServer(config Config) *HttpServer {
 // Start the HTTP server
 // Returns a WaitGroup which will be released as soon as the server stops
 func (s *HttpServer) Start(wg *sync.WaitGroup) {
-	if err := registerHealthHandler(s.config.HTTP.Health, s.config.MongoDb.URI); err != nil {
+	closer, err := registerHealthHandler(s.config.HTTP.Health, s.config.MongoDb.URI)
+	if err != nil {
 		log.Fatal(err.Error())
 	}
+	s.healthCloser = closer
 	registerLivenessHandler(s.config.HTTP.Liveness)
 	registerPrometheusHandler(s.config.HTTP.Prometheus)
 
@@ -51,18 +54,23 @@ func (s *HttpServer) Start(wg *sync.WaitGroup) {
 	}()
 }
 
-// Shutdown stops the running server
+// Shutdown stops the running server and closes the health-check MongoDB connection.
 func (s *HttpServer) Shutdown(ctx context.Context) error {
+	if s.healthCloser != nil {
+		if err := s.healthCloser(ctx); err != nil {
+			log.Error(fmt.Sprintf("health check client disconnect error: %v", err))
+		}
+	}
 	return s.server.Shutdown(ctx)
 }
 
-func registerHealthHandler(path string, mongoUri string) error {
-	handler, err := RegisterHealthChecks(mongoUri)
+func registerHealthHandler(path string, mongoUri string) (func(context.Context) error, error) {
+	handler, closer, err := RegisterHealthChecks(mongoUri)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	netHttp.Handle(path, handler)
-	return nil
+	return closer, nil
 }
 
 func registerLivenessHandler(path string) {

@@ -9,7 +9,7 @@ import (
 	"github.com/ppussar/mongodb_exporter/internal/logger"
 	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"github.com/prometheus/client_golang/prometheus"
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Collector queries one prometheus metric from mongoDB

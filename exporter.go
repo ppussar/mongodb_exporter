@@ -130,7 +130,7 @@ func (e *Exporter) connect() {
 			e.mu.Unlock()
 		}
 
-		// Fix 6: drain collector errors but only reconnect when a
+		// drain collector errors but only reconnect when a
 		// connection-level error occurs, not on every query error.
 		for {
 			select {

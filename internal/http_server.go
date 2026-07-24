@@ -31,7 +31,7 @@ func (s *HttpServer) Start(wg *sync.WaitGroup) {
 	if err := registerHealthHandler(s.config.HTTP.Health, s.config.MongoDb.URI); err != nil {
 		log.Fatal(err.Error())
 	}
-	registerLivelinessHandler(s.config.HTTP.Liveliness)
+	registerLivenessHandler(s.config.HTTP.Liveness)
 	registerPrometheusHandler(s.config.HTTP.Prometheus)
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.HTTP.Port))
@@ -65,7 +65,7 @@ func registerHealthHandler(path string, mongoUri string) error {
 	return nil
 }
 
-func registerLivelinessHandler(path string) {
+func registerLivenessHandler(path string) {
 	netHttp.HandleFunc(path, func(w netHttp.ResponseWriter, request *netHttp.Request) {
 		w.WriteHeader(204)
 	})

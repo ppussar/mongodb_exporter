@@ -52,8 +52,8 @@ func applyEnvOverrides(c *Config) {
 	if health := os.Getenv("HTTP_HEALTH"); health != "" {
 		c.HTTP.Health = health
 	}
-	if live := os.Getenv("HTTP_LIVELINESS"); live != "" {
-		c.HTTP.Liveliness = live
+	if live := os.Getenv("HTTP_LIVENESS"); live != "" {
+		c.HTTP.Liveness = live
 	}
 	
 	// MongoDB overrides
@@ -131,7 +131,7 @@ type HTTP struct {
 	Port       int    `yaml:"port"`
 	Prometheus string `yaml:"prometheus"`
 	Health     string `yaml:"health"`
-	Liveliness string `yaml:"liveliness"`
+	Liveness   string `yaml:"liveness"`
 }
 
 type MongoDB struct {

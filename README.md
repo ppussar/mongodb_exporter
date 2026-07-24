@@ -45,9 +45,9 @@ The exporter is configured via YAML file and can be overridden with environment 
 Prometheus scrapes its monitored applications regularly via a provided http endpoint. 
 The configuration below opens a http endpoint on [http://localhost:9090/prometheus](http://localhost:9090/prometheus)
 
-#### Liveliness
+#### Liveness
 
-Liveliness-Endpoint returns http status code 204 - [No Content] as soon as the exporter is started. 
+Liveness-Endpoint returns http status code 204 - [No Content] as soon as the exporter is started. 
 An HTTP error status code indicates that the application is in bad condition and should be restarted.  
 The configuration below opens a http endpoint on [http://localhost:9090/live](http://localhost:9090/live)
 
@@ -62,7 +62,7 @@ http:
   port: 9090
   prometheus: /prometheus
   health: /health
-  liveliness: /live
+  liveness: /live
 ```
 
 HTTPS is currently not supported.
@@ -85,7 +85,7 @@ Configuration values can be overridden using environment variables:
 | `HTTP_PORT` | `http.port` | HTTP server port |
 | `HTTP_PROMETHEUS` | `http.prometheus` | Prometheus endpoint path |
 | `HTTP_HEALTH` | `http.health` | Health endpoint path |
-| `HTTP_LIVELINESS` | `http.liveliness` | Liveness endpoint path |
+| `HTTP_LIVENESS` | `http.liveness` | Liveness endpoint path |
 | `MONGODB_URI` | `mongodb.uri` | MongoDB connection URI |
 
 Example:

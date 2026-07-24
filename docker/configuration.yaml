@@ -3,7 +3,7 @@ http:
   port: 9090
   prometheus: '/prometheus'
   health: '/health'
-  liveliness: '/live'
+  liveness: '/live'
 mongodb:
   uri: mongodb://database:27017
 metrics:

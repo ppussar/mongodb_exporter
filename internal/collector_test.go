@@ -5,7 +5,7 @@ import (
 
 	"github.com/ppussar/mongodb_exporter/internal/mocks"
 	"github.com/stretchr/testify/mock"
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"

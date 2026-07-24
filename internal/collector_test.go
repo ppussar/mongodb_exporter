@@ -27,7 +27,7 @@ func TestCollector(t *testing.T) {
 		con := Connection{}
 		c := NewCollector(metric, con, make(chan error, 1))
 
-		assert.Equal(t, "Desc{fqName: \"name\", help: \"help\", constLabels: {tagKey=\"tagValue\"}, variableLabels: {tagAttrKey}}", c.String())
+		assert.Equal(t, "Desc{fqName: \"name\", help: \"help\", unit: \"\", constLabels: {tagKey=\"tagValue\"}, variableLabels: {tagAttrKey}}", c.String())
 	})
 }
 
@@ -44,7 +44,7 @@ func TestDescribe(t *testing.T) {
 
 		actual := <-ch
 
-		assert.Equal(t, actual.String(), "Desc{fqName: \"myMetric\", help: \"myHelp\", constLabels: {}, variableLabels: {}}", "Mismatching metrics description.")
+		assert.Equal(t, actual.String(), "Desc{fqName: \"myMetric\", help: \"myHelp\", unit: \"\", constLabels: {}, variableLabels: {}}", "Mismatching metrics description.")
 	})
 
 }
@@ -93,7 +93,7 @@ func TestCollect(t *testing.T) {
 
 		assert.Equal(t, 1, len(ch))
 		actualMetric := <-ch
-		assert.Equal(t, `Desc{fqName: "myMetric", help: "myHelp", constLabels: {constTag="value"}, variableLabels: {dynTag}}`, actualMetric.Desc().String())
+		assert.Equal(t, `Desc{fqName: "myMetric", help: "myHelp", unit: "", constLabels: {constTag="value"}, variableLabels: {dynTag}}`, actualMetric.Desc().String())
 		mongoMock.AssertExpectations(t)
 	})
 

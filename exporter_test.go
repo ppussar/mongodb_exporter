@@ -11,62 +11,65 @@ import (
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		config  internal.Config
+		yaml    string
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid config",
-			config: internal.Config{
-				HTTP: internal.HTTP{Port: 9090},
-				MongoDb: internal.MongoDB{URI: "mongodb://localhost:27017"},
-				Metrics: []internal.Metric{{
-					Name:             "test_metric",
-					Db:               "testdb",
-					Collection:       "testcol",
-					Find:             "{}",
-					MetricsAttribute: "count",
-				}},
-			},
+			yaml: `
+http:
+  port: 9090
+mongodb:
+  uri: mongodb://localhost:27017
+metrics:
+  - name: test_metric
+    db: testdb
+    collection: testcol
+    find: "{}"
+    metricsAttribute: count
+`,
 			wantErr: false,
 		},
 		{
 			name: "invalid port",
-			config: internal.Config{
-				HTTP: internal.HTTP{Port: -1},
-				MongoDb: internal.MongoDB{URI: "mongodb://localhost:27017"},
-				Metrics: []internal.Metric{{
-					Name:             "test_metric",
-					Db:               "testdb",
-					Collection:       "testcol",
-					Find:             "{}",
-					MetricsAttribute: "count",
-				}},
-			},
+			yaml: `
+http:
+  port: -1
+mongodb:
+  uri: mongodb://localhost:27017
+metrics:
+  - name: test_metric
+    db: testdb
+    collection: testcol
+    find: "{}"
+    metricsAttribute: count
+`,
 			wantErr: true,
-			errMsg:  "invalid port: -1",
+			errMsg:  "invalid HTTP port",
 		},
 		{
 			name: "empty MongoDB URI",
-			config: internal.Config{
-				HTTP: internal.HTTP{Port: 9090},
-				MongoDb: internal.MongoDB{URI: ""},
-				Metrics: []internal.Metric{{
-					Name:             "test_metric",
-					Db:               "testdb",
-					Collection:       "testcol",
-					Find:             "{}",
-					MetricsAttribute: "count",
-				}},
-			},
+			yaml: `
+http:
+  port: 9090
+mongodb:
+  uri: ""
+metrics:
+  - name: test_metric
+    db: testdb
+    collection: testcol
+    find: "{}"
+    metricsAttribute: count
+`,
 			wantErr: true,
-			errMsg:  "mongodb URI is required",
+			errMsg:  "MongoDB URI cannot be empty",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateConfig(tt.config)
+			_, err := internal.ReadConfig([]byte(tt.yaml))
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errMsg)

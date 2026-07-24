@@ -40,12 +40,7 @@ func main() {
 		log.Error(fmt.Sprintf("Failed to read config: %v", err))
 		os.Exit(1)
 	}
-	
-	if err := validateConfig(config); err != nil {
-		log.Error(fmt.Sprintf("Invalid config: %v", err))
-		os.Exit(1)
-	}
-	
+
 	exporter := NewExporter(config)
 	handleSignals(exporter)
 	
@@ -72,33 +67,6 @@ func handleSignals(exporter *Exporter) {
 		}
 		os.Exit(0)
 	}()
-}
-
-func validateConfig(config internal.Config) error {
-	if config.HTTP.Port <= 0 || config.HTTP.Port > 65535 {
-		return fmt.Errorf("invalid port: %d", config.HTTP.Port)
-	}
-	if config.MongoDb.URI == "" {
-		return fmt.Errorf("mongodb URI is required")
-	}
-	for i, metric := range config.Metrics {
-		if metric.Name == "" {
-			return fmt.Errorf("metric[%d]: name is required", i)
-		}
-		if metric.Db == "" {
-			return fmt.Errorf("metric[%d]: db is required", i)
-		}
-		if metric.Collection == "" {
-			return fmt.Errorf("metric[%d]: collection is required", i)
-		}
-		if metric.Find == "" && metric.Aggregate == "" {
-			return fmt.Errorf("metric[%d]: either find or aggregate is required", i)
-		}
-		if metric.MetricsAttribute == "" {
-			return fmt.Errorf("metric[%d]: metricsAttribute is required", i)
-		}
-	}
-	return nil
 }
 
 func printUsage() {

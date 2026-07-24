@@ -11,10 +11,11 @@ import (
 func TestMongoHealthCheck(t *testing.T) {
 
 	t.Run("returns handler when MongoDB URI is valid", func(t *testing.T) {
-		handler, err := RegisterHealthChecks("mongodb://localhost:27017")
+		handler, closer, err := RegisterHealthChecks("mongodb://localhost:27017")
 		assert.NoError(t, err)
 		assert.NotNil(t, handler)
-		
+		assert.NotNil(t, closer)
+
 		// Give some time for the health check to initialize
 		time.Sleep(2 * time.Second)
 
@@ -31,17 +32,19 @@ func TestMongoHealthCheck(t *testing.T) {
 	})
 
 	t.Run("returns error when MongoDB URI is invalid", func(t *testing.T) {
-		handler, err := RegisterHealthChecks("invalid-uri")
+		handler, closer, err := RegisterHealthChecks("invalid-uri")
 		assert.Error(t, err)
 		assert.Nil(t, handler)
+		assert.Nil(t, closer)
 		assert.Contains(t, err.Error(), "failed to connect to MongoDB")
 	})
 
 	t.Run("returns handler for unreachable MongoDB host", func(t *testing.T) {
-		handler, err := RegisterHealthChecks("mongodb://localhost:27999")
+		handler, closer, err := RegisterHealthChecks("mongodb://localhost:27999")
 		assert.NoError(t, err)
 		assert.NotNil(t, handler)
-		
+		assert.NotNil(t, closer)
+
 		// Give some time for the health check to initialize
 		time.Sleep(2 * time.Second)
 

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/ppussar/mongodb_exporter/internal/logger"
 	"github.com/ppussar/mongodb_exporter/internal/wrapper"
 	"github.com/prometheus/client_golang/prometheus"
@@ -137,8 +139,9 @@ func (e *Exporter) connect() {
 		}
 
 		con, err := internal.NewConnection(e.config.MongoDb.URI)
+		safeURI := internal.MaskURI(e.config.MongoDb.URI)
 		if err != nil {
-			internal.ConnectionStatus.WithLabelValues(e.config.MongoDb.URI).Set(0)
+			internal.ConnectionStatus.WithLabelValues(safeURI).Set(0)
 			log.Info(fmt.Sprintf("Error during connection creation: %v; Retry in 2s...", err))
 			select {
 			case <-time.After(2 * time.Second):
@@ -147,9 +150,9 @@ func (e *Exporter) connect() {
 			}
 			continue
 		}
-		
+
 		if con != nil {
-			internal.ConnectionStatus.WithLabelValues(e.config.MongoDb.URI).Set(1)
+			internal.ConnectionStatus.WithLabelValues(safeURI).Set(1)
 			e.mu.Lock()
 			if len(e.collectors) == 0 {
 				e.registerCollectors(e.config.Metrics, con, errorC)
@@ -158,14 +161,23 @@ func (e *Exporter) connect() {
 			}
 			e.mu.Unlock()
 		}
-		
-		select {
-		case err := <-errorC:
-			internal.ConnectionStatus.WithLabelValues(e.config.MongoDb.URI).Set(0)
-			log.Error(fmt.Sprintf("Collector error: %v", err))
-		case <-e.ctx.Done():
-			return
+
+		// Fix 6: drain collector errors but only reconnect when a
+		// connection-level error occurs, not on every query error.
+		for {
+			select {
+			case err := <-errorC:
+				log.Error(fmt.Sprintf("Collector error: %v", err))
+				// Only reconnect if it looks like a connection problem
+				if isConnectionError(err) {
+					internal.ConnectionStatus.WithLabelValues(safeURI).Set(0)
+					goto reconnect
+				}
+			case <-e.ctx.Done():
+				return
+			}
 		}
+	reconnect:
 	}
 }
 
@@ -188,4 +200,17 @@ func (e *Exporter) updateCollectorConnection(con wrapper.IConnection) {
 		log.Info("Update connection in collector: " + curCollector.String())
 		curCollector.UpdateConnection(con)
 	}
+}
+
+// isConnectionError returns true for errors that indicate a lost MongoDB connection.
+func isConnectionError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "no mongodb connection") ||
+		strings.Contains(msg, "connection") ||
+		strings.Contains(msg, "socket") ||
+		strings.Contains(msg, "eof") ||
+		strings.Contains(msg, "broken pipe")
 }

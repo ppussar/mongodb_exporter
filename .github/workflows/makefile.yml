@@ -37,6 +37,8 @@ jobs:
       run: |
         go mod tidy
         git diff --exit-code go.sum go.mod
+    - name: coverage
+      run: make cover
 
   release:
     runs-on: ubuntu-latest

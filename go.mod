@@ -6,7 +6,7 @@ require (
 	github.com/AppsFlyer/go-sundheit v0.6.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/stretchr/testify v1.12.0
-	go.mongodb.org/mongo-driver v1.17.9
+	go.mongodb.org/mongo-driver v1.17.10
 	go.uber.org/zap v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 )

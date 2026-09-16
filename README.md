@@ -1,7 +1,5 @@
 # MongoDB Query Exporter
 
-[![GoReport](https://goreportcard.com/badge/github.com/ppussar/mongodb_exporter)](https://goreportcard.com/report/github.com/ppussar/mongodb_exporter)
-
 Prometheus exporter for MongoDB queries. Extract metrics from mongoDB queries results.
 
 ## Build and Run
@@ -201,3 +199,9 @@ fruitstore_total{provider="mongodb_exporter",type="Fruit Express",} 17.0
 fruitstore_total{provider="mongodb_exporter",type="Bananas Daily",} 7.0
 fruitstore_total{provider="mongodb_exporter",type="Fruit Marked",} 14.0
 ```
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for
+details on the development workflow, code style, commit message conventions, and
+how to open a pull request.

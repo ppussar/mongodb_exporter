@@ -1,0 +1,38 @@
+name: Feature Request
+description: Suggest an idea or enhancement for the MongoDB Query Exporter
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for suggesting an improvement!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: >
+        What problem would this feature solve? Is your request related to a
+        limitation you ran into?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe what you would like to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you considered.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any other context, examples, or references here.
+    validations:
+      required: false

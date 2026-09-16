@@ -1,0 +1,81 @@
+name: Bug Report
+description: Report a problem with the MongoDB Query Exporter
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report!
+
+        Please **do not** include real credentials (e.g. in MongoDB connection
+        strings) in this report. For security vulnerabilities, use private
+        reporting instead — see our Security Policy.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the behavior?
+      placeholder: |
+        1. Configure the exporter with '...'
+        2. Run '...'
+        3. Scrape '/prometheus'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include logs or error output if available.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: >
+        Relevant part of your configuration YAML. Redact any credentials.
+      render: yaml
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Exporter version
+      description: Which release or commit are you running?
+      placeholder: "e.g. v1.2.3 or git commit hash"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment method
+      options:
+        - Binary
+        - Docker
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Go version (if building from source), MongoDB version.
+      placeholder: "e.g. macOS 14, Go 1.26, MongoDB 7.0"
+    validations:
+      required: false

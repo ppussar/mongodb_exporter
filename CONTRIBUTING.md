@@ -93,7 +93,7 @@ the type/scope (e.g. `feat!:`), which triggers a major release.
 
 ## Pull Requests
 
-1. Fork the repository and create a topic branch from `master`.
+1. Fork the repository and create a topic branch from `main`.
 2. Make your changes, including tests and documentation updates.
 3. Ensure the full pipeline passes locally:
    ```bash
@@ -104,13 +104,13 @@ the type/scope (e.g. `feat!:`), which triggers a major release.
    ```
    Confirm `go mod tidy` leaves `go.mod` and `go.sum` unchanged, since CI checks
    this.
-4. Push your branch and open a pull request against `master`.
+4. Push your branch and open a pull request against `main`.
 5. Keep the PR title concise and the description focused on what changed, why,
    and how it was tested.
 
 The CI pipeline runs lint, build, coverage, and a Docker Compose smoke test on
 every pull request. Releases and image publishing happen automatically when
-changes land on `master`.
+changes land on `main`.
 
 ## Reporting Issues
 

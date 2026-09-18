@@ -30,12 +30,13 @@ type Exporter struct {
 }
 
 func main() {
-	if len(os.Args) < 2 {
+	configPath := resolveConfigPath(os.Args[1:], os.Getenv)
+	if configPath == "" {
 		printUsage()
 		os.Exit(1)
 	}
-	
-	config, err := internal.ReadConfigFile(os.Args[1])
+
+	config, err := internal.ReadConfigFile(configPath)
 	if err != nil {
 		log.Error(fmt.Sprintf("Failed to read config: %v", err))
 		os.Exit(1)
@@ -43,7 +44,7 @@ func main() {
 
 	exporter := NewExporter(config)
 	handleSignals(exporter)
-	
+
 	if err := exporter.start(); err != nil {
 		log.Error(fmt.Sprintf("Failed to start exporter: %v", err))
 		os.Exit(1)
@@ -69,8 +70,18 @@ func handleSignals(exporter *Exporter) {
 	}()
 }
 
+// resolveConfigPath determines the config file path, preferring the first CLI
+// argument and falling back to the CONFIG environment variable. This keeps the
+// container entrypoint shell-free (see docker/Dockerfile).
+func resolveConfigPath(args []string, getenv func(string) string) string {
+	if len(args) >= 1 && args[0] != "" {
+		return args[0]
+	}
+	return getenv("CONFIG")
+}
+
 func printUsage() {
-	fmt.Printf("Usage: \n\t%s configuration.yaml\n", os.Args[0])
+	fmt.Printf("Usage: \n\t%s configuration.yaml\n\tor set the CONFIG environment variable to the config file path\n", os.Args[0])
 }
 
 // NewExporter creates a new Exporter defined by the given config

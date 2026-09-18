@@ -17,6 +17,10 @@ make build
 docker run -v /local/path/to/configuration.yaml:/configuration.yaml -e CONFIG=/configuration.yaml ppussar/mongodb_exporter
 ```
 
+The image runs on a minimal `scratch` base. The config file path is taken from the
+first command-line argument, or from the `CONFIG` environment variable when no
+argument is given.
+
 ### Run Demo Application
 
 (Requires docker)

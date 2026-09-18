@@ -8,6 +8,47 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestResolveConfigPath(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		env  map[string]string
+		want string
+	}{
+		{
+			name: "cli argument takes precedence",
+			args: []string{"/from/arg.yaml"},
+			env:  map[string]string{"CONFIG": "/from/env.yaml"},
+			want: "/from/arg.yaml",
+		},
+		{
+			name: "falls back to CONFIG env var when no argument",
+			args: []string{},
+			env:  map[string]string{"CONFIG": "/from/env.yaml"},
+			want: "/from/env.yaml",
+		},
+		{
+			name: "empty when neither argument nor env is set",
+			args: []string{},
+			env:  map[string]string{},
+			want: "",
+		},
+		{
+			name: "empty argument falls back to env",
+			args: []string{""},
+			env:  map[string]string{"CONFIG": "/from/env.yaml"},
+			want: "/from/env.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			getenv := func(key string) string { return tt.env[key] }
+			assert.Equal(t, tt.want, resolveConfigPath(tt.args, getenv))
+		})
+	}
+}
+
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -82,7 +123,7 @@ metrics:
 
 func TestNewExporter(t *testing.T) {
 	config := internal.Config{
-		HTTP: internal.HTTP{Port: 9090},
+		HTTP:    internal.HTTP{Port: 9090},
 		MongoDb: internal.MongoDB{URI: "mongodb://localhost:27017"},
 		Metrics: []internal.Metric{{
 			Name:             "test_metric",
@@ -104,7 +145,7 @@ func TestNewExporter(t *testing.T) {
 
 func TestExporterShutdown(t *testing.T) {
 	config := internal.Config{
-		HTTP: internal.HTTP{Port: 0}, // Use port 0 for testing
+		HTTP:    internal.HTTP{Port: 0}, // Use port 0 for testing
 		MongoDb: internal.MongoDB{URI: "mongodb://localhost:27017"},
 		Metrics: []internal.Metric{{
 			Name:             "test_metric",
@@ -116,7 +157,7 @@ func TestExporterShutdown(t *testing.T) {
 	}
 
 	exporter := NewExporter(config)
-	
+
 	// Test context cancellation
 	select {
 	case <-exporter.ctx.Done():

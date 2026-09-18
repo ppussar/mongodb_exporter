@@ -1,7 +1,7 @@
 ---
 services:
   database:
-    image: 'mongo:latest'
+    image: 'mongo:7.0' # pinned: mongo 8.0+ crashes on Linux kernel 6.19-7.0.13 (tcmalloc/rseq). See https://www.mongodb.com/docs/manual/administration/production-notes/ and SERVER-121912
     container_name: database
     environment:
       MONGO_INITDB_DATABASE: fruitstore
@@ -11,7 +11,7 @@ services:
       - "27017-27017:27017-27017"
     restart: always
     healthcheck:
-      test: "if mongo --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'; then exit 0; fi; exit 1;"
+      test: "if mongosh --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'; then exit 0; fi; exit 1;"
       interval: 5s
       timeout: 5s
       retries: 5

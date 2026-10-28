@@ -1,6 +1,7 @@
 BIN      = $(CURDIR)/bin
 IMAGE    = ppussar/mongodb_exporter
 VERSION ?= $(shell git describe --tags --always --dirty 2> /dev/null || echo v0)
+PLATFORMS ?= linux/amd64,linux/arm64
 GO      = go
 TIMEOUT = 15
 
@@ -42,7 +43,7 @@ image:
 
 .PHONY: push-image
 push-image:
-	@docker push $(IMAGE):$(VERSION)
+	@docker buildx build --platform $(PLATFORMS) -f docker/Dockerfile -t $(IMAGE):$(VERSION) --push .
 
 .PHONY: start-demo
 start-demo: image

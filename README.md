@@ -21,6 +21,8 @@ The image runs on a minimal `scratch` base. The config file path is taken from t
 first command-line argument, or from the `CONFIG` environment variable when no
 argument is given.
 
+Images are published for `linux/amd64` and `linux/arm64`.
+
 ### Run Demo Application
 
 (Requires docker)

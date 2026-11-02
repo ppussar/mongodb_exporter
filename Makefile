@@ -48,12 +48,12 @@ push-image:
 .PHONY: start-demo
 start-demo: image
 	@docker compose -f docker/docker-compose.yaml up --build -d
-	@echo "\ncurl localhost:9090/prometheus | grep fruitstore_"
-	@curl -s localhost:9090/prometheus | grep fruitstore_
+	@echo "\ncurl localhost:9090/prometheus | grep provider=\"mongodb_exporter\""
+	@curl -s localhost:9090/prometheus | grep provider=\"mongodb_exporter\"
 
 .PHONY: stop-demo
 stop-demo:
-	@docker compose -f docker/docker-compose.yaml down --remove-orphans
+	@docker compose -f docker/docker-compose.yaml down -v --remove-orphans
 
 .PHONY: generate-mocks
 generate-mocks: ## regenerates the mocks for the tests

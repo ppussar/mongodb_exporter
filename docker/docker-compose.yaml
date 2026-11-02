@@ -1,7 +1,7 @@
 ---
 services:
   database:
-    image: 'mongo:7.0' # pinned: mongo 8.0+ crashes on Linux kernel 6.19-7.0.13 (tcmalloc/rseq). See https://www.mongodb.com/docs/manual/administration/production-notes/ and SERVER-121912
+    image: 'mongo:9.0' # NOTE: mongo 8.0+ (incl. 9.0) crashes on Linux kernel 6.19-7.0.13 (tcmalloc/rseq, SERVER-121912); a startup guard stops the server on affected kernels. See https://www.mongodb.com/docs/manual/administration/production-notes/
     container_name: database
     environment:
       MONGO_INITDB_DATABASE: fruitstore

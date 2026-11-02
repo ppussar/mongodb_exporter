@@ -37,6 +37,20 @@ func (_m *IConnection) Aggregate(ctx context.Context, db string, collection stri
 	return r0, r1
 }
 
+// Disconnect provides a mock function with given fields: ctx
+func (_m *IConnection) Disconnect(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Find provides a mock function with given fields: ctx, db, collection, command
 func (_m *IConnection) Find(ctx context.Context, db string, collection string, command string) (wrapper.ICursor, error) {
 	ret := _m.Called(ctx, db, collection, command)

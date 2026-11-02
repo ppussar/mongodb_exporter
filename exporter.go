@@ -27,6 +27,7 @@ type Exporter struct {
 	mu         sync.RWMutex
 	ctx        context.Context
 	cancel     context.CancelFunc
+	newConn    func(uri string) (wrapper.IConnection, error)
 }
 
 func main() {
@@ -93,6 +94,7 @@ func NewExporter(config internal.Config) *Exporter {
 		collectors: make([]*internal.Collector, 0),
 		ctx:        ctx,
 		cancel:     cancel,
+		newConn:    internal.NewConnection,
 	}
 }
 
@@ -109,6 +111,7 @@ func (e *Exporter) start() error {
 
 func (e *Exporter) connect() {
 	errorC := make(chan error, 10) // Buffered to prevent blocking
+	var current wrapper.IConnection
 
 	for {
 		select {
@@ -117,7 +120,7 @@ func (e *Exporter) connect() {
 		default:
 		}
 
-		con, err := internal.NewConnection(e.config.MongoDb.URI)
+		con, err := e.newConn(e.config.MongoDb.URI)
 		safeURI := internal.MaskURI(e.config.MongoDb.URI)
 		if err != nil {
 			internal.ConnectionStatus.WithLabelValues(safeURI).Set(0)
@@ -139,6 +142,9 @@ func (e *Exporter) connect() {
 				e.updateCollectorConnection(con)
 			}
 			e.mu.Unlock()
+			// the collectors use the new connection now, release the previous one
+			disconnect(current)
+			current = con
 		}
 
 		// drain collector errors but only reconnect when a
@@ -178,6 +184,19 @@ func (e *Exporter) updateCollectorConnection(con wrapper.IConnection) {
 	for _, curCollector := range e.collectors {
 		log.Info("Update connection in collector: " + curCollector.String())
 		curCollector.UpdateConnection(con)
+	}
+}
+
+// disconnect closes a connection the collectors no longer use, giving the
+// queries still running on it the same time as a collect.
+func disconnect(con wrapper.IConnection) {
+	if con == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := con.Disconnect(ctx); err != nil {
+		log.Error(fmt.Sprintf("Error while disconnecting previous connection: %v", err))
 	}
 }
 

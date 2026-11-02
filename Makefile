@@ -4,6 +4,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2> /dev/null || echo v0)
 PLATFORMS ?= linux/amd64,linux/arm64
 GO      = go
 TIMEOUT = 15
+MOCKERY_VERSION ?= v3.9.0
 
 .PHONY: all
 all:
@@ -56,6 +57,5 @@ stop-demo:
 	@docker compose -f docker/docker-compose.yaml down -v --remove-orphans
 
 .PHONY: generate-mocks
-generate-mocks: ## regenerates the mocks for the tests
-	mockery -dir internal/wrapper -output internal/mocks -name IConnection
-	mockery -dir internal/wrapper -output internal/mocks -name ICursor
+generate-mocks: ## regenerates the mocks for the tests (config in .mockery.yaml)
+	$(GO) run github.com/vektra/mockery/v3@$(MOCKERY_VERSION)

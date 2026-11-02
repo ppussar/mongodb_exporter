@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -200,17 +201,17 @@ func TestConnectDisconnectsPreviousConnectionOnReconnect(t *testing.T) {
 	connections := make(chan wrapper.IConnection, 2)
 	disconnected := make(chan struct{})
 	first := &mocks.IConnection{}
-	first.On("Find", mock.Anything, metric.Db, metric.Collection, metric.Find).
+	first.EXPECT().Find(mock.Anything, metric.Db, metric.Collection, metric.Find).
 		Return(nil, errors.New("connection reset by peer")).Once()
-	first.On("Disconnect", mock.Anything).
-		Run(func(mock.Arguments) {
+	first.EXPECT().Disconnect(mock.Anything).
+		Run(func(ctx context.Context) {
 			// the reconnect must have created the new connection already
 			assert.Empty(t, connections)
 			close(disconnected)
 		}).
 		Return(nil).Once()
 	second := &mocks.IConnection{}
-	second.On("Disconnect", mock.Anything).Return(nil).Maybe()
+	second.EXPECT().Disconnect(mock.Anything).Return(nil).Maybe()
 
 	connections <- first
 	connections <- second

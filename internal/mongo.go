@@ -54,3 +54,8 @@ func (con Connection) Find(ctx context.Context, db string, collection string, co
 	}
 	return con.client.Database(db).Collection(collection).Find(ctx, &bdoc)
 }
+
+// Disconnect closes the client; if ctx has a deadline it waits for the connections in use until it expires
+func (con Connection) Disconnect(ctx context.Context) error {
+	return con.client.Disconnect(ctx)
+}

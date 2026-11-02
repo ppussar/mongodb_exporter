@@ -1,11 +1,17 @@
 package main
 
 import (
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/ppussar/mongodb_exporter/internal"
+	"github.com/ppussar/mongodb_exporter/internal/mocks"
+	"github.com/ppussar/mongodb_exporter/internal/wrapper"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolveConfigPath(t *testing.T) {
@@ -175,4 +181,70 @@ func TestExporterShutdown(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		t.Fatal("Context should be cancelled after cancel")
 	}
+}
+
+func TestConnectDisconnectsPreviousConnectionOnReconnect(t *testing.T) {
+	metric := internal.Metric{
+		Name:             "reconnect_test_metric",
+		Db:               "testdb",
+		Collection:       "testcol",
+		Find:             "{}",
+		MetricsAttribute: "count",
+	}
+	exporter := NewExporter(internal.Config{
+		MongoDb: internal.MongoDB{URI: "mongodb://localhost:27017"},
+		Metrics: []internal.Metric{metric},
+	})
+	defer exporter.cancel()
+
+	connections := make(chan wrapper.IConnection, 2)
+	disconnected := make(chan struct{})
+	first := &mocks.IConnection{}
+	first.On("Find", mock.Anything, metric.Db, metric.Collection, metric.Find).
+		Return(nil, errors.New("connection reset by peer")).Once()
+	first.On("Disconnect", mock.Anything).
+		Run(func(mock.Arguments) {
+			// the reconnect must have created the new connection already
+			assert.Empty(t, connections)
+			close(disconnected)
+		}).
+		Return(nil).Once()
+	second := &mocks.IConnection{}
+	second.On("Disconnect", mock.Anything).Return(nil).Maybe()
+
+	connections <- first
+	connections <- second
+	exporter.newConn = func(string) (wrapper.IConnection, error) {
+		return <-connections, nil
+	}
+
+	done := make(chan struct{})
+	go func() {
+		exporter.connect()
+		close(done)
+	}()
+
+	require.Eventually(t, func() bool {
+		exporter.mu.RLock()
+		defer exporter.mu.RUnlock()
+		return len(exporter.collectors) == 1
+	}, 5*time.Second, 10*time.Millisecond)
+	exporter.mu.RLock()
+	collector := exporter.collectors[0]
+	exporter.mu.RUnlock()
+	defer prometheus.Unregister(collector)
+
+	// a connection error on the first connection triggers the reconnect
+	collector.Collect(make(chan prometheus.Metric, 1))
+
+	select {
+	case <-disconnected:
+	case <-time.After(5 * time.Second):
+		t.Fatal("previous connection was not disconnected after reconnect")
+	}
+	exporter.cancel()
+	<-done
+
+	first.AssertExpectations(t)
+	second.AssertNotCalled(t, "Disconnect", mock.Anything)
 }

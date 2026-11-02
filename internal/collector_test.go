@@ -2,6 +2,7 @@ package internal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ppussar/mongodb_exporter/internal/mocks"
 	"github.com/stretchr/testify/mock"
@@ -117,6 +118,78 @@ func TestCollect(t *testing.T) {
 		mongoMock.AssertExpectations(t)
 	})
 
+}
+
+// QueryDuration is global, so every subtest uses its own metric name.
+func TestCollectQueryDuration(t *testing.T) {
+	const queryLatency = 100 * time.Millisecond
+
+	t.Run("Collect with aggregate: duration includes the query", func(t *testing.T) {
+		metric, _ := testMetric()
+		metric.Name = "slowAggregateMetric"
+		metric.Aggregate = `[{"$group": { "_id": "$deliverer", "pieces": {"$sum": "$qty"}}}]`
+
+		mongoCursor := emptyCursor()
+		mongoMock := mocks.IConnection{}
+		mongoMock.On("Aggregate", mock.Anything, metric.Db, metric.Collection, metric.Aggregate).
+			Run(func(mock.Arguments) { time.Sleep(queryLatency) }).
+			Return(mongoCursor, nil).Once()
+
+		c := NewCollector(metric, &mongoMock, make(chan error, 1))
+		c.Collect(make(chan prometheus.Metric, 1))
+
+		assert.GreaterOrEqual(t, queryDurationSum(t, metric.Name, "aggregate"), queryLatency.Seconds())
+		mongoMock.AssertExpectations(t)
+	})
+
+	t.Run("Collect with find: duration includes the query", func(t *testing.T) {
+		metric, _ := testMetric()
+		metric.Name = "slowFindMetric"
+		metric.Find = "{}"
+
+		mongoCursor := emptyCursor()
+		mongoMock := mocks.IConnection{}
+		mongoMock.On("Find", mock.Anything, metric.Db, metric.Collection, metric.Find).
+			Run(func(mock.Arguments) { time.Sleep(queryLatency) }).
+			Return(mongoCursor, nil).Once()
+
+		c := NewCollector(metric, &mongoMock, make(chan error, 1))
+		c.Collect(make(chan prometheus.Metric, 1))
+
+		assert.GreaterOrEqual(t, queryDurationSum(t, metric.Name, "find"), queryLatency.Seconds())
+		mongoMock.AssertExpectations(t)
+	})
+}
+
+func emptyCursor() *mocks.ICursor {
+	cursor := &mocks.ICursor{}
+	cursor.On("Next", mock.Anything).Return(false).Once()
+	cursor.On("Err").Return(nil).Once()
+	cursor.On("Close", mock.Anything).Return(nil).Once()
+	return cursor
+}
+
+// queryDurationSum returns the total query duration observed for the given metric and query type.
+func queryDurationSum(t *testing.T, metricName string, queryType string) float64 {
+	t.Helper()
+	families, err := prometheus.DefaultGatherer.Gather()
+	assert.NoError(t, err)
+	for _, family := range families {
+		if family.GetName() != "mongodb_exporter_query_duration_seconds" {
+			continue
+		}
+		for _, m := range family.GetMetric() {
+			labels := map[string]string{}
+			for _, label := range m.GetLabel() {
+				labels[label.GetName()] = label.GetValue()
+			}
+			if labels["metric_name"] == metricName && labels["query_type"] == queryType {
+				return m.GetHistogram().GetSampleSum()
+			}
+		}
+	}
+	t.Fatalf("no %s query duration observed for %s", queryType, metricName)
+	return 0
 }
 
 func testMetric() (Metric, bson.M) {

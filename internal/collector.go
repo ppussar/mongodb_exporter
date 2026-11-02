@@ -85,6 +85,12 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 	ActiveQueries.WithLabelValues(col.config.Db, col.config.Collection).Inc()
 	defer ActiveQueries.WithLabelValues(col.config.Db, col.config.Collection).Dec()
 
+	// start timer before the query so its round trip is measured;
+	// the query type label is resolved when the duration is observed
+	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(v float64) {
+		QueryDuration.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, queryType).Observe(v)
+	}))
+
 	if len(col.config.Aggregate) != 0 {
 		queryType = "aggregate"
 		cur, err = mongo.Aggregate(ctx, col.config.Db, col.config.Collection, col.config.Aggregate)
@@ -97,8 +103,6 @@ func (col *Collector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// start timer only after queryType is known
-	timer := prometheus.NewTimer(QueryDuration.WithLabelValues(col.config.Name, col.config.Db, col.config.Collection, queryType))
 	defer timer.ObserveDuration()
 
 	if err != nil {

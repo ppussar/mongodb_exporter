@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -55,14 +56,14 @@ func TestCollect(t *testing.T) {
 		metric, _ := testMetric()
 		metric.Aggregate = `[{"$group": { "_id": "$deliverer", "pieces": {"$sum": "$qty"}}}]`
 
-		mongoCursor := mocks.ICursor{}
-		mongoCursor.On("Next", mock.Anything).Return(false).Once()
-		mongoCursor.On("Err").Return(nil).Once()
-		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
-		mongoMock := mocks.IConnection{}
-		mongoMock.On("Aggregate", mock.Anything, metric.Db, metric.Collection, metric.Aggregate).Return(&mongoCursor, nil).Once()
+		mongoCursor := &mocks.ICursor{}
+		mongoCursor.EXPECT().Next(mock.Anything).Return(false).Once()
+		mongoCursor.EXPECT().Err().Return(nil).Once()
+		mongoCursor.EXPECT().Close(mock.Anything).Return(nil).Once()
+		mongoMock := &mocks.IConnection{}
+		mongoMock.EXPECT().Aggregate(mock.Anything, metric.Db, metric.Collection, metric.Aggregate).Return(mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock, make(chan error, 1))
+		c := NewCollector(metric, mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
 		c.Collect(ch)
 
@@ -75,20 +76,20 @@ func TestCollect(t *testing.T) {
 		metric, doc := testMetric()
 		metric.Aggregate = `[{"$group": { "_id": "$deliverer", "pieces": {"$sum": "$qty"}}}]`
 
-		mongoCursor := mocks.ICursor{}
-		mongoCursor.On("Next", mock.Anything).Return(true).Once()
-		mongoCursor.On("Next", mock.Anything).Return(false).Once()
-		mongoCursor.On("Err").Return(nil).Once()
-		mongoCursor.On("Decode", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
-			arg := args.Get(0).(*bson.M)
+		mongoCursor := &mocks.ICursor{}
+		mongoCursor.EXPECT().Next(mock.Anything).Return(true).Once()
+		mongoCursor.EXPECT().Next(mock.Anything).Return(false).Once()
+		mongoCursor.EXPECT().Err().Return(nil).Once()
+		mongoCursor.EXPECT().Decode(mock.Anything).Run(func(val interface{}) {
+			arg := val.(*bson.M)
 			*arg = doc
-		})
+		}).Return(nil)
 
-		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
-		mongoMock := mocks.IConnection{}
-		mongoMock.On("Aggregate", mock.Anything, metric.Db, metric.Collection, metric.Aggregate).Return(&mongoCursor, nil).Once()
+		mongoCursor.EXPECT().Close(mock.Anything).Return(nil).Once()
+		mongoMock := &mocks.IConnection{}
+		mongoMock.EXPECT().Aggregate(mock.Anything, metric.Db, metric.Collection, metric.Aggregate).Return(mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock, make(chan error, 1))
+		c := NewCollector(metric, mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
 		c.Collect(ch)
 
@@ -102,14 +103,14 @@ func TestCollect(t *testing.T) {
 		metric, _ := testMetric()
 		metric.Find = "{}"
 
-		mongoCursor := mocks.ICursor{}
-		mongoCursor.On("Next", mock.Anything).Return(false).Once()
-		mongoCursor.On("Err").Return(nil).Once()
-		mongoCursor.On("Close", mock.Anything).Return(nil).Once()
-		mongoMock := mocks.IConnection{}
-		mongoMock.On("Find", mock.Anything, metric.Db, metric.Collection, metric.Find).Return(&mongoCursor, nil).Once()
+		mongoCursor := &mocks.ICursor{}
+		mongoCursor.EXPECT().Next(mock.Anything).Return(false).Once()
+		mongoCursor.EXPECT().Err().Return(nil).Once()
+		mongoCursor.EXPECT().Close(mock.Anything).Return(nil).Once()
+		mongoMock := &mocks.IConnection{}
+		mongoMock.EXPECT().Find(mock.Anything, metric.Db, metric.Collection, metric.Find).Return(mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock, make(chan error, 1))
+		c := NewCollector(metric, mongoMock, make(chan error, 1))
 		ch := make(chan prometheus.Metric, 1)
 		c.Collect(ch)
 
@@ -130,12 +131,12 @@ func TestCollectQueryDuration(t *testing.T) {
 		metric.Aggregate = `[{"$group": { "_id": "$deliverer", "pieces": {"$sum": "$qty"}}}]`
 
 		mongoCursor := emptyCursor()
-		mongoMock := mocks.IConnection{}
-		mongoMock.On("Aggregate", mock.Anything, metric.Db, metric.Collection, metric.Aggregate).
-			Run(func(mock.Arguments) { time.Sleep(queryLatency) }).
+		mongoMock := &mocks.IConnection{}
+		mongoMock.EXPECT().Aggregate(mock.Anything, metric.Db, metric.Collection, metric.Aggregate).
+			Run(func(ctx context.Context, db string, collection string, command string) { time.Sleep(queryLatency) }).
 			Return(mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock, make(chan error, 1))
+		c := NewCollector(metric, mongoMock, make(chan error, 1))
 		c.Collect(make(chan prometheus.Metric, 1))
 
 		assert.GreaterOrEqual(t, queryDurationSum(t, metric.Name, "aggregate"), queryLatency.Seconds())
@@ -148,12 +149,12 @@ func TestCollectQueryDuration(t *testing.T) {
 		metric.Find = "{}"
 
 		mongoCursor := emptyCursor()
-		mongoMock := mocks.IConnection{}
-		mongoMock.On("Find", mock.Anything, metric.Db, metric.Collection, metric.Find).
-			Run(func(mock.Arguments) { time.Sleep(queryLatency) }).
+		mongoMock := &mocks.IConnection{}
+		mongoMock.EXPECT().Find(mock.Anything, metric.Db, metric.Collection, metric.Find).
+			Run(func(ctx context.Context, db string, collection string, command string) { time.Sleep(queryLatency) }).
 			Return(mongoCursor, nil).Once()
 
-		c := NewCollector(metric, &mongoMock, make(chan error, 1))
+		c := NewCollector(metric, mongoMock, make(chan error, 1))
 		c.Collect(make(chan prometheus.Metric, 1))
 
 		assert.GreaterOrEqual(t, queryDurationSum(t, metric.Name, "find"), queryLatency.Seconds())
@@ -163,9 +164,9 @@ func TestCollectQueryDuration(t *testing.T) {
 
 func emptyCursor() *mocks.ICursor {
 	cursor := &mocks.ICursor{}
-	cursor.On("Next", mock.Anything).Return(false).Once()
-	cursor.On("Err").Return(nil).Once()
-	cursor.On("Close", mock.Anything).Return(nil).Once()
+	cursor.EXPECT().Next(mock.Anything).Return(false).Once()
+	cursor.EXPECT().Err().Return(nil).Once()
+	cursor.EXPECT().Close(mock.Anything).Return(nil).Once()
 	return cursor
 }
 

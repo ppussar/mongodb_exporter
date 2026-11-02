@@ -6,6 +6,7 @@ import "context"
 type IConnection interface {
 	Aggregate(ctx context.Context, db string, collection string, command string) (ICursor, error)
 	Find(ctx context.Context, db string, collection string, command string) (ICursor, error)
+	Disconnect(ctx context.Context) error
 }
 
 // ICursor interface of mongo.Cursor

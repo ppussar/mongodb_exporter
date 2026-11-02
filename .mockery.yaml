@@ -1,0 +1,11 @@
+template: testify
+# Keep the existing mock layout: internal/mocks/<Interface>.go, package "mocks".
+dir: internal/mocks
+pkgname: mocks
+filename: "{{.InterfaceName}}.go"
+structname: "{{.InterfaceName}}"
+packages:
+  github.com/ppussar/mongodb_exporter/internal/wrapper:
+    interfaces:
+      IConnection:
+      ICursor:

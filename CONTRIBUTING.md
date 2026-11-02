@@ -9,7 +9,9 @@ follows.
 - [Go](https://go.dev/dl/) 1.26 or newer (see `go.mod` and the CI workflow)
 - [Docker](https://docs.docker.com/get-docker/) (for building images and running the demo)
 - [golangci-lint](https://golangci-lint.run/usage/install/) (used in CI and recommended locally)
-- [mockery](https://github.com/vektra/mockery) (only needed to regenerate test mocks)
+
+> Mocks are generated with [mockery](https://github.com/vektra/mockery) v3, which
+> `make generate-mocks` fetches on demand via `go run` &mdash; no separate install needed.
 
 ## Getting Started
 
@@ -34,7 +36,7 @@ The project uses a `Makefile` for common tasks:
 | `make image` | Build the Docker image |
 | `make start-demo` | Start MongoDB + exporter via Docker Compose and scrape metrics |
 | `make stop-demo` | Stop the demo containers |
-| `make generate-mocks` | Regenerate the test mocks (requires mockery) |
+| `make generate-mocks` | Regenerate the test mocks with mockery v3 (config in `.mockery.yaml`) |
 | `make clean` | Remove the `bin/` directory |
 
 ### Running the demo
@@ -56,12 +58,18 @@ make stop-demo
 ### Regenerating mocks
 
 Mocks for the MongoDB wrapper interfaces are generated with
-[mockery](https://github.com/vektra/mockery) and live in `internal/mocks`.
+[mockery](https://github.com/vektra/mockery) v3 and live in `internal/mocks`.
+The interfaces to mock and the output layout are configured in `.mockery.yaml`.
 After changing an interface in `internal/wrapper`, regenerate them:
 
 ```bash
 make generate-mocks
 ```
+
+The mockery version is pinned via `MOCKERY_VERSION` in the `Makefile`; the tool
+is fetched on demand with `go run`, so no local installation is required. The
+generated files carry a `DO NOT EDIT` header &mdash; do not edit them by hand;
+change the interface (and `.mockery.yaml` if needed) and regenerate instead.
 
 ## Commit Messages
 
